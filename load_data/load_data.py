@@ -651,18 +651,3 @@ def load_dataset(choice="mix",dataset_size="all"):
 
     return main(Batch_Size,dataset_size)
 
-# def _load_dataset(choice="mix"):
-#     for filename in glob.glob(performance_record + '/*'):
-#         data = torch.load(filename)
-#         data.y = data.y.view(-1, 1)
-#         graphlist.append(data)
-#         if data.y.item() < bestY:
-#             bestY = data.y.item()
-#
-#     print("best Y=", bestY)
-#
-#     graph_list = graphlist[:n_sample]
-#     val_size = int(len(graph_list) * 20 / 100)
-#
-#     val_dataset = graph_list[:val_size]
-#     train_dataset = graph_list[val_size:]
