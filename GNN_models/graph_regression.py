@@ -288,20 +288,3 @@ def test_gc(model, test_loader, paralell=True):
     return RMSE,pearson,kendalltau,spearmanr
 
 
-
-
-
-
-
-
-
-    # total_preds = torch.Tensor()
-    # total_labels = torch.Tensor()
-    # with torch.no_grad():
-    #     for i, data in enumerate(test_loader):  # Iterate in batches over the training/test dataset.
-    #         data = data.to(device)
-    #         # print(data)
-    #         output = model(data)
-    #         total_preds = torch.cat((total_preds, output.cpu()), 0)
-    #         total_labels = torch.cat((total_labels, data.y.view(-1, 1).cpu()), 0)
-    #     return rmse(total_labels.numpy().flatten(), total_preds.numpy().flatten())
