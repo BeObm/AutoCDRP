@@ -16,7 +16,6 @@ num_seed = 12345
 config = ConfigParser()
 Batch_Size = 1024
 
-
 RunCode = dates = datetime.now().strftime("%d-%m_%Hh%M")
 
 def set_seed(seed=num_seed):
@@ -37,10 +36,10 @@ def set_seed(seed=num_seed):
 project_root_dir = os.path.abspath(os.getcwd())
 
 type_task = "graph regression"
-dataset_name = "GDSC"
-dataset_source = "drug"
+dataset_name = "CCLE"
+dataset_source = "CCLE"
 run_detail="final_run"
-
+folder = f"{project_root_dir}/data/{dataset_source}/"
 
 # Second  level of  running configurations
 def create_config_file():
@@ -50,7 +49,7 @@ def create_config_file():
 
     # No neeed to fill dataset information twice
     config["dataset"] = {
-        "type_experiment": "cell_blind",  # "cell_blind", "drug_blind","mix"
+        "type_experiment": "mix",  # "cell_blind", "drug_blind","mix"
         "dataset_name": dataset_name,  # Citeseer,
         'type_task': type_task,  # it could be "graph classification", "link prediction",node classification
         "dataset_source": dataset_source,

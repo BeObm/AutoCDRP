@@ -38,8 +38,6 @@ def get_performance_distributions(e_search_space):  # get performance distributi
     train_loader, val_loader, test_loader = load_dataset(config["dataset"]["type_experiment"])
     gcn,train_model,test_model=get_train(type_task)
 
-
-
     edge_index = get_edge_index(model_list[0])
     # print("example of model_config", model_list[0])
     predictor_dataset=defaultdict(list)

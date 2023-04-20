@@ -178,8 +178,9 @@ class GraphRegression(MessagePassing):
         self.conv_xt_2 = nn.Conv1d(in_channels=n_filters, out_channels=n_filters * 2, kernel_size=8)
         self.pool_xt_2 = nn.MaxPool1d(3)
         self.conv_xt_3 = nn.Conv1d(in_channels=n_filters * 2, out_channels=n_filters * 4, kernel_size=8)
+        dim0 =n_filters * 4
         self.pool_xt_3 = nn.MaxPool1d(3)
-        self.fc1_xt = nn.Linear(2944, self.output_conv2)
+        self.fc1_xt = nn.Linear(2176, self.output_conv2)#2944
 
         # combined layers
         self.fc1 = nn.Linear(2 * self.output_conv2, 1024)
