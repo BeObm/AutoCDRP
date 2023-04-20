@@ -23,25 +23,24 @@ from datetime import date
 import random
 import time
 from settings.config_file import *
-set_seed()
+
 
 if __name__ == "__main__":
+    set_seed()
     torch.cuda.empty_cache()
     create_config_file()
    
     create_paths()  
     manage_budget()
 
-    # torch.cuda.empty_cache()
+    torch.cuda.empty_cache()
 
-    # print(f'code running on {config["dataset"]["dataset_name"]} dataset')
     e_search_space,option_decoder = create_e_search_space()
-    # e_search_space,option_decoder = create_baseline_search_space()
     total_search_timestart = time.time()
 
-    performance_records_path = get_performance_distributions(e_search_space)
+    # performance_records_path = get_performance_distributions(e_search_space)
 
-    # performance_records_path =config["path"]["predictor_dataset_folder"]
+    performance_records_path =config["path"]["predictor_dataset_folder"]
 
     TopK_final = get_prediction(performance_records_path,e_search_space,config["predictor"]["predictor_type"])
 

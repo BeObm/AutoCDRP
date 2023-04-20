@@ -146,7 +146,7 @@ def testpredictor(model,loader,title):
 
  
 @torch.no_grad()
-def predict_accuracy_using_graph(model,graphLoader): 
+def predict_accuracy_using_graph(model,graphLoader):
         
         model.eval()
         prediction_dict={}
@@ -166,7 +166,10 @@ def predict_accuracy_using_graph(model,graphLoader):
             for a in range(len(pred)):  # loop for retriving the GNN configuration of each graph in the data loader
                 temp_list=[]
                 for key,values in choices.items():
-                    temp_list.append((key,values[1][a].item()))
+                    # print(f"this is value {values}")
+                    # print(f"this is value[1] {values[a]}")
+                    # print(f"this is value[1][a] {values[a][1]}")
+                    temp_list.append((key,values[a][1]))
                 choice.append(temp_list)
             prediction_dict['model_config'].extend(choice)
             prediction_dict["RMSE"].extend(accuracy)
@@ -177,8 +180,37 @@ def predict_accuracy_using_graph(model,graphLoader):
         TopK=df.nsmallest(n=k,columns='RMSE',keep="all")
         return TopK
 
+def predict_accuracy_using_graph2(model, graphLoader):
+    set_seed()
+    search_metric = config["param"]["search_metric"]
+    model.eval()
+    prediction_dict = {'model_config': [], search_metric: []}
+    k = int(config["param"]["k"])
+    i = 0
 
+    for data in graphLoader:
+        performance = []
+        i += 1
+        data.x = data.x.to(device)
+        data.edge_index = data.edge_index.to(device)
+        data.batch = data.batch.to(device)
+        pred = model(data.x, data.edge_index, data.batch)
+        performance = np.append(performance, pred.cpu().detach().numpy())
+        choices = deepcopy(data.model_config_choices)
+        choice = []
+        for a in range(len(pred)):  # loop for retriving the GNN configuration of each graph in the data loader
+            temp_list = []
+            for key, values in choices.items():
+                # temp_list.append((key,values[1][a].item()))
+                temp_list.append((key, values[a][1]))
+            choice.append(temp_list)
+        prediction_dict['model_config'].extend(choice)
+        prediction_dict[search_metric].extend(performance)
 
+    df = pd.DataFrame.from_dict(prediction_dict)
+    TopK = df.nlargest(n=k, columns=search_metric, keep="all")
+    TopK = TopK[:k]
+    return TopK
 
 def get_prediction_from_graph(performance_record, e_search_space, regressor_model_type):
 
@@ -507,14 +539,13 @@ def get_prediction_from_table(performance_record, e_search_space):
 def evaluate_model_predictor(y_true, y_pred,title="Predictor training"):
 
    dataset_name =config["dataset"]["dataset_name"]
-   print(f"true value = {y_true} and predicted value is {y_pred}")
+   # print(f"true value = {y_true} and predicted value is {y_pred}")
    # R2_Score=round(math.sqrt(mean_squared_error(y_true,  y_pred)),2)
-   kendalltau = round(stats.kendalltau(y_true, y_pred)[0],4)
-   spearmanr = round(stats.spearmanr(y_true, y_pred)[0],4)
+   kendalltau = round(stats.kendalltau(y_true, y_pred)[0],10)
+   spearmanr = round(stats.spearmanr(y_true, y_pred)[0],10)
    MSE = mean_squared_error(y_true, y_pred)
-   RMSE = round(math.sqrt(MSE),4)
-   pearson = round(stats.pearsonr(y_true, y_pred)[0], 4)
-
+   RMSE = round(math.sqrt(MSE),10)
+   pearson = round(stats.pearsonr(y_true, y_pred)[0], 10)
 
    if title != "Sampling_distribution":
        if title =="Predictor training test":

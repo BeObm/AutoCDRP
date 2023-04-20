@@ -69,8 +69,8 @@ def create_config_file():
         "nfcode": 56,  # number of digit for each function code when using embedding method
         "noptioncode": 8,
         "sample_model_epochs": 1,
-        "topk_model_epochs": 20,
-        "best_model_epochs": 300,
+        "topk_model_epochs": 1,
+        "best_model_epochs": 20,
         "encoding_method": "one_hot",
         "type_sampling": "controlled_stratified_sampling",  # random_sampling, uniform_sampling, controlled_stratified_sampling
         "predictor_dataset_type": "graph",
@@ -78,8 +78,8 @@ def create_config_file():
         'type_input_graph': "directed",
         "use_paralell": "yes",
         "learning_type": "supervised",
-        "predict_sample": 500,
-        "batch_sample": 50
+        "predict_sample": 5000,
+        "batch_sample": 500
     }
 
     config["predictor"] = {
@@ -133,8 +133,8 @@ def create_paths():
     add_config("path", "predictor_results_folder", predictor_results_folder)
 
     add_config("path", "predictor_weight_path", result_folder)
-    add_config("path", "predictor_dataset_folder", predictor_results_folder)  #uncomment to build predictor dataset if predictor training dataset is not available
-    # add_config("path", "predictor_dataset_folder", "data/predictor_dataset_blind-cell_uniform")
+    # add_config("path", "predictor_dataset_folder", predictor_results_folder)  #uncomment to build predictor dataset if predictor training dataset is not available
+    add_config("path", "predictor_dataset_folder", "results/graph regression/CCLE/20-04_13h22(final_run)/predictor_training_data")
     # add_config("path", "predictor_dataset_folder", "data/predictor_dataset_blind-cell_stratified")
     # add_config("path", "predictor_dataset_folder", "data/predictor_dataset_mix_uniform")
     # add_config("path", "predictor_dataset_folder", "data/predictor_dataset_mix_stratified")

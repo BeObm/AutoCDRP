@@ -415,8 +415,7 @@ def save_mix_drug_cell_matrix():
     cell_dict, cell_feature = save_cell_mut_matrix()
     drug_dict, drug_smile, smile_graph = load_drug_smile()
 
-    smile_graph
-
+    # smile_graph
 
     bExist = np.zeros((len(drug_dict), len(cell_dict)))
     temp_data = get_cell_drug_response_list()
@@ -482,16 +481,11 @@ def save_mix_drug_cell_matrix():
 
 
 def save_blind_drug_matrix():
-    f = open(folder + "PANCANCER_IC.csv")
-    reader = csv.reader(f)
-    next(reader)
+    set_seed()
     random.seed(num_seed)
     cell_dict, cell_feature = save_cell_mut_matrix()
     drug_dict, drug_smile, smile_graph = load_drug_smile()
 
-    matrix_list = []
-
-    temp_data = []
 
     xd_train = []
     xc_train = []
@@ -505,22 +499,15 @@ def save_blind_drug_matrix():
     xc_test = []
     y_test = []
 
-    xd_unknown = []
-    xc_unknown = []
-    y_unknown = []
+    # xd_unknown = []
+    # xc_unknown = []
+    # y_unknown = []
 
     dict_drug_cell = {}
 
     bExist = np.zeros((len(drug_dict), len(cell_dict)))
 
-    for item in reader:
-        drug = item[0]
-        cell = item[3]
-        ic50 = item[8]
-        ic50 = 1 / (1 + pow(math.exp(float(ic50)), -0.1))
-
-        temp_data.append((drug, cell, ic50))
-
+    temp_data = get_cell_drug_response_list()
     random.shuffle(temp_data)
 
     for data in temp_data:
@@ -580,16 +567,15 @@ def save_blind_drug_matrix():
 
 
 def save_blind_cell_matrix():
-    f = open(folder + "PANCANCER_IC.csv")
-    reader = csv.reader(f)
-    next(reader)
-    random.seed(num_seed)
+    # f = open(folder + "PANCANCER_IC.csv")
+    # reader = csv.reader(f)
+    # next(reader)
+    # random.seed(num_seed)
+    set_seed()
     cell_dict, cell_feature = save_cell_mut_matrix()
     drug_dict, drug_smile, smile_graph = load_drug_smile()
 
-    matrix_list = []
 
-    temp_data = []
 
     xd_train = []
     xc_train = []
@@ -602,23 +588,23 @@ def save_blind_cell_matrix():
     xd_test = []
     xc_test = []
     y_test = []
-
-    xd_unknown = []
-    xc_unknown = []
-    y_unknown = []
+    #
+    # xd_unknown = []
+    # xc_unknown = []
+    # y_unknown = []
 
     dict_drug_cell = {}
 
     bExist = np.zeros((len(drug_dict), len(cell_dict)))
 
-    for item in reader:
-        drug = item[0]
-        cell = item[3]
-        ic50 = item[8]
-        ic50 = 1 / (1 + pow(math.exp(float(ic50)), -0.1))
-
-        temp_data.append((drug, cell, ic50))
-
+    # for item in reader:
+    #     drug = item[0]
+    #     cell = item[3]
+    #     ic50 = item[8]
+    #     ic50 = 1 / (1 + pow(math.exp(float(ic50)), -0.1))
+    #
+    #     temp_data.append((drug, cell, ic50))
+    temp_data = get_cell_drug_response_list()
     random.shuffle(temp_data)
 
     for data in temp_data:
@@ -676,7 +662,6 @@ def save_blind_cell_matrix():
                                dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_test', xd=xd_test, xt=xc_test,
                                y=y_test,
                                smile_graph=smile_graph)
-
 
 def main(Batch_Size,dataset_size="all"):
     train_losses = []

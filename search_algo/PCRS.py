@@ -58,14 +58,14 @@ def get_performance_distributions(e_search_space):  # get performance distributi
                start_time = time.time()
                train_loss = train_model(model,train_loader, criterion, optimizer,epoch+1)
                epoch_time = time.time() - start_time
-               print(f"training one epoch costs {epoch_time}")
+               # print(f"training one epoch costs {epoch_time}")
                # if train_loss <best_loss:
                #     best_loss = train_loss
                #     torch.save(model.state_dict(),best_loss_param_path )
             start_time = time.time()
             test_rmse= round(test_model(model, test_loader)[0],4)
             test_time = time.time() - start_time
-            print(f"testing one epoch costs {test_time}")
+            # print(f"testing one epoch costs {test_time}")
             if  math.isnan(test_rmse):
                 test_rmse= 999
            
