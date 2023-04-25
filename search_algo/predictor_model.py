@@ -106,7 +106,7 @@ class Predictor(torch.nn.Module):
 
 
 def trainpredictor(predictor_model, train_loader,optimizer):
-
+    set_seed()
     predictor_model.train()
     avg_loss = []
     # crit=torch.nn.MSELoss(reduction='sum')
@@ -147,7 +147,7 @@ def testpredictor(model,loader,title):
  
 @torch.no_grad()
 def predict_accuracy_using_graph(model,graphLoader):
-        
+        set_seed()
         model.eval()
         prediction_dict={}
         prediction_dict['model_config']=[]
@@ -180,41 +180,10 @@ def predict_accuracy_using_graph(model,graphLoader):
         TopK=df.nsmallest(n=k,columns='RMSE',keep="all")
         return TopK
 
-def predict_accuracy_using_graph2(model, graphLoader):
-    set_seed()
-    search_metric = config["param"]["search_metric"]
-    model.eval()
-    prediction_dict = {'model_config': [], search_metric: []}
-    k = int(config["param"]["k"])
-    i = 0
-
-    for data in graphLoader:
-        performance = []
-        i += 1
-        data.x = data.x.to(device)
-        data.edge_index = data.edge_index.to(device)
-        data.batch = data.batch.to(device)
-        pred = model(data.x, data.edge_index, data.batch)
-        performance = np.append(performance, pred.cpu().detach().numpy())
-        choices = deepcopy(data.model_config_choices)
-        choice = []
-        for a in range(len(pred)):  # loop for retriving the GNN configuration of each graph in the data loader
-            temp_list = []
-            for key, values in choices.items():
-                # temp_list.append((key,values[1][a].item()))
-                temp_list.append((key, values[a][1]))
-            choice.append(temp_list)
-        prediction_dict['model_config'].extend(choice)
-        prediction_dict[search_metric].extend(performance)
-
-    df = pd.DataFrame.from_dict(prediction_dict)
-    TopK = df.nlargest(n=k, columns=search_metric, keep="all")
-    TopK = TopK[:k]
-    return TopK
 
 def get_prediction_from_graph(performance_record, e_search_space, regressor_model_type):
 
-   torch.manual_seed(num_seed)
+   set_seed()
    dim=int(config["predictor"]["dim"])
    drop_out=float(config["predictor"]["drop_out"])
    lr=float(config["predictor"]["lr"]) 
@@ -367,6 +336,7 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
 
 
 def get_prediction_from_table(performance_record, e_search_space):
+   set_seed()
    predict_sample=int(config["param"]["predict_sample"])
    type_sample =config["param"]["type_sampling"]
    now =config["param"]["run_code"]
@@ -458,11 +428,7 @@ def get_prediction_from_table(performance_record, e_search_space):
        regr_.write(f"regression with AdaboostRegressor gives R2 score={r2_tr1}|r={pearson_tr1}|rho={spearman_tr1}|tau={kendall_tr1}\n")
        regr_.write(f"regression with MLP gives R2 score={r2_tr3}|r={pearson_tr3}|rho={spearman_tr3}|tau={kendall_tr3}\n")
        regr_.write(f"regression with SGD gives R2 score={r2_tr4}|r={pearson_tr4}|rho={spearman_tr4}|tau={kendall_tr4}\n")
-   
-    
-    
-  
-    
+
    regr=regr2
    RMSE_train =r2_tr2
    pearson_tr= pearson_tr2

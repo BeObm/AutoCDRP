@@ -25,7 +25,7 @@ set_seed()
 
 
 def get_performance_distributions(e_search_space):  # get performance distribution of s*n models (n = search space size)
-
+    set_seed()
     torch.manual_seed(num_seed)
     best_loss_param_path =f"{config['path']['performance_distribution_folder']}/best_dist_param.pth"
 
@@ -115,7 +115,7 @@ def get_performance_distributions(e_search_space):  # get performance distributi
  
     
 def get_best_model(topk_list,option_decoder):
-
+    set_seed()
     torch.cuda.empty_cache()
     torch.manual_seed(num_seed)
     best_loss_param_path =f"{config['path']['performance_distribution_folder']}/best_dist_param.pth"
@@ -218,7 +218,7 @@ def get_train(type_task):
      return GraphRegression,train_gc,test_gc
              
 def get_model_instance(submodel,GCN):
-
+    set_seed()
     type_task =config["dataset"]["type_task"]
     param_dict={}
     # dist_dict_encoded, sp_dict_decoder = encode_sp(submodel, 'unique_option')    # pour enregitrer just un model    dans le dataset                      
@@ -260,6 +260,7 @@ def get_model_instance2(submodel,GCN):
     None.
  
     """
+    set_seed()
     type_task =config["dataset"]["type_task"]
     param_dict={}
     # dist_dict_encoded, sp_dict_decoder = encode_sp(submodel, 'unique_option')    # pour enregitrer just un model    dans le dataset                      

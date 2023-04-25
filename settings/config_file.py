@@ -36,10 +36,9 @@ def set_seed(seed=num_seed):
 project_root_dir = os.path.abspath(os.getcwd())
 
 type_task = "graph regression"
-dataset_name = "CCLE"
-dataset_source = "CCLE"
+dataset_name = "GDSC"
 run_detail="final_run"
-folder = f"{project_root_dir}/data/{dataset_source}/"
+folder = f"{project_root_dir}/data/{dataset_name}/"
 
 # Second  level of  running configurations
 def create_config_file():
@@ -52,8 +51,8 @@ def create_config_file():
         "type_experiment": "mix",  # "cell_blind", "drug_blind","mix"
         "dataset_name": dataset_name,  # Citeseer,
         'type_task': type_task,  # it could be "graph classification", "link prediction",node classification
-        "dataset_source": dataset_source,
-        "dataset_root": f"{project_root_dir}/data/{dataset_source}"
+        "dataset_source": dataset_name,
+        "dataset_root": f"{project_root_dir}/data/{dataset_name}"
     }
 
     # fill other configuration information

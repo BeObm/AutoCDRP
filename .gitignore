@@ -3,3 +3,7 @@ data/drug/processed/GDSC_cell_blind_test.pt
 data/drug/processed/GDSC_cell_blind_train.pt
 data/drug/processed/GDSC_cell_blind_val.pt
 *.txt
+*.pt
+*.pt
+*.pt
+*.pt

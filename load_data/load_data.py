@@ -112,11 +112,10 @@ def is_not_float(string_list):
 """
 The following 4 function is used to preprocess the drug data. We download the drug list manually, and download the SMILES format using pubchempy. Since this part is time consuming, I write the cids and SMILES into a csv file. 
 """
-
 # folder = ""
 
 def load_drug_list():
-    filename = folder + "Druglist.csv"
+    filename = config["dataset"]["dataset_root"] + "Druglist.csv"
     csvfile = open(filename, "rb")
     reader = csv.reader(csvfile)
     next(reader, None)
@@ -131,7 +130,7 @@ def write_drug_cid():
     drugs = load_drug_list()
     drug_id = []
     datas = []
-    outputfile = open(folder + 'pychem_cid.csv', 'wb')
+    outputfile = open(config["dataset"]["dataset_root"] + 'pychem_cid.csv', 'wb')
     wr = csv.writer(outputfile)
     unknow_drug = []
     for drug in drugs:
@@ -148,7 +147,7 @@ def write_drug_cid():
         row = [drug, str(cid)]
         wr.writerow(row)
     outputfile.close()
-    outputfile = open(folder + "unknow_drug_by_pychem.csv", 'wb')
+    outputfile = open(config["dataset"]["dataset_root"] + "unknow_drug_by_pychem.csv", 'wb')
     wr = csv.writer(outputfile)
     wr.writerow(unknow_drug)
 
@@ -158,7 +157,7 @@ def cid_from_other_source():
     some drug can not be found in pychem, so I try to find some cid manually.
     the small_molecule.csv is downloaded from http://lincs.hms.harvard.edu/db/sm/
     """
-    f = open(folder + "small_molecule.csv", 'r')
+    f = open(config["dataset"]["dataset_root"] + "small_molecule.csv", 'r')
     reader = csv.reader(f)
     reader.next()
     cid_dict = {}
@@ -168,13 +167,13 @@ def cid_from_other_source():
         if not name in cid_dict:
             cid_dict[name] = str(cid)
 
-    unknow_drug = open(folder + "unknow_drug_by_pychem.csv").readline().split(",")
+    unknow_drug = open(config["dataset"]["dataset_root"] + "unknow_drug_by_pychem.csv").readline().split(",")
     drug_cid_dict = {k: v for k, v in cid_dict.iteritems() if k in unknow_drug and not is_not_float([v])}
     return drug_cid_dict
 
 
 def load_cid_dict():
-    reader = csv.reader(open(folder + "pychem_cid.csv"))
+    reader = csv.reader(open(config["dataset"]["dataset_root"] + "pychem_cid.csv"))
     pychem_dict = {}
     for item in reader:
         pychem_dict[item[0]] = item[1]
@@ -186,16 +185,16 @@ def download_smiles():
     cids_dict = load_cid_dict()
     cids = [v for k, v in cids_dict.iteritems()]
     inv_cids_dict = {v: k for k, v in cids_dict.iteritems()}
-    download('CSV', folder + 'drug_smiles.csv', cids, operation='property/CanonicalSMILES,IsomericSMILES',
+    download('CSV', config["dataset"]["dataset_root"] + 'drug_smiles.csv', cids, operation='property/CanonicalSMILES,IsomericSMILES',
              overwrite=True)
-    f = open(folder + 'drug_smiles.csv')
+    f = open(config["dataset"]["dataset_root"] + 'drug_smiles.csv')
     reader = csv.reader(f)
     header = ['name'] + reader.next()
     content = []
     for line in reader:
         content.append([inv_cids_dict[line[0]]] + line)
     f.close()
-    f = open(folder + "drug_smiles.csv", "w")
+    f = open(config["dataset"]["dataset_root"] + "drug_smiles.csv", "w")
     writer = csv.writer(f)
     writer.writerow(header)
     for item in content:
@@ -233,12 +232,12 @@ def one_of_k_encoding_unk(x, allowable_set):
     return list(map(lambda s: x == s, allowable_set))
 
 
-def get_drug_smiles(drug_id):
+def get_drug_smiles(drug_cid):
     """
     Retrieve the SMILES string for a given drug ID using the PubChem API.
     """
     # Construct the API URL
-    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{drug_id}/property/CanonicalSMILES/json"
+    url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{drug_cid}/property/CanonicalSMILES/json"
 
     # Send the API request
     response = requests.get(url)
@@ -253,6 +252,7 @@ def get_drug_smiles(drug_id):
 
 
 def smile_to_graph(smile):
+    set_seed()
     mol = Chem.MolFromSmiles(smile)
 
     c_size = mol.GetNumAtoms()
@@ -284,87 +284,36 @@ def get_pubchem_smiles(drug_id):
     return smiles
 
 def load_drug_smile():
-    if config["dataset"]["dataset_name"] == "GDSC":
-        reader = csv.reader(open(folder + "drug_smiles.csv"))
-        next(reader, None)
+  set_seed()
+  if config["dataset"]["dataset_name"]=="CCLE":
+      drug_id_file =config["dataset"]["dataset_root"]+"/drug_name_cid.csv"
+      cid_col=2
+  elif config["dataset"]["dataset_name"]=="GDSC":
+      drug_id_file = config["dataset"]["dataset_root"] + "/drug_feature.csv"
+      cid_col = 0
+  df = pd.read_csv(drug_id_file)
+  drug_dict={}
+  drug_smile=[]
+  smile_graph={}
+  drug_id=0
+  for idx,row in df.iterrows():
+      if df.iloc[idx,cid_col] not in drug_dict:
+          drug_dict[int(df.iloc[idx,cid_col])]=drug_id
+          drug_id+=1
+      drug_smile.append(get_drug_smiles(int(df.iloc[idx,cid_col])))
+  smile_graph = {}
+  for smile in drug_smile:
+      g = smile_to_graph(smile)
+      smile_graph[smile] = g
+  print(f'this is drug dict ; {drug_dict}')
 
-        drug_dict = {}
-        drug_smile = []
-
-        for item in reader:
-            name = item[0]
-            smile = item[2]
-
-            if name in drug_dict:
-                pos = drug_dict[name]
-            else:
-                pos = len(drug_dict)
-                drug_dict[name] = pos
-            drug_smile.append(smile)
-
-        smile_graph = {}
-        for smile in drug_smile:
-            g = smile_to_graph(smile)
-            smile_graph[smile] = g
-    elif config["dataset"]["dataset_name"] == "CCLE":
-      drug_id_file =config["dataset"]["dataset_root"]+"/drug_id_name.xlsx"
-      df = pd.read_excel(drug_id_file,header=None)
-      drug_dict={}
-      drug_smile=[]
-      smile_graph={}
-      drug_id=0
-      for idx,row in df.iterrows():
-          if df.iloc[idx,2] not in drug_dict:
-              drug_dict[df.iloc[idx,2]]=drug_id
-              drug_id+=1
-          drug_smile.append(get_drug_smiles(df.iloc[idx, 1]))
-      smile_graph = {}
-      for smile in drug_smile:
-          g = smile_to_graph(smile)
-          smile_graph[smile] = g
-
-    return drug_dict, drug_smile, smile_graph
+  return drug_dict, drug_smile, smile_graph
 
 
 def save_cell_mut_matrix():
-    if config["dataset"]["dataset_name"]=="GDSC":
-        f = open(folder + "cell_mutation.csv")
-        reader = csv.reader(f)
-        next(reader)
-        features = {}
-        cell_dict = {}
-        mut_dict = {}
-        matrix_list = []
 
-        for item in reader:
-            cell_id = item[1]
-            mut = item[5]
-            is_mutated = int(item[6])
-
-            if mut in mut_dict:
-                col = mut_dict[mut]
-            else:
-                col = len(mut_dict)
-                mut_dict[mut] = col
-
-            if cell_id in cell_dict:
-                row = cell_dict[cell_id]
-            else:
-                row = len(cell_dict)
-                cell_dict[cell_id] = row
-            if is_mutated == 1:
-                matrix_list.append((row, col))
-
-        cell_feature = np.zeros((len(cell_dict), len(mut_dict)))
-
-        for item in matrix_list:
-            cell_feature[item[0], item[1]] = 1
-
-        with open('mut_dict', 'wb') as fp:
-            pickle.dump(mut_dict, fp)
-        print(f"cell_dict size is {len(cell_dict)} and mut size is {len(mut_dict)}")
-    elif config["dataset"]["dataset_name"]=="CCLE":
-        mut_file = config["dataset"]["dataset_root"]+"/mutation_ccle.csv"
+    if config["dataset"]["dataset_name"]=="CCLE":
+        mut_file = config["dataset"]["dataset_root"]+"/cell_mutation.csv"
         cell_dict={}
         df = pd.read_csv(mut_file, index_col=0)
         cell_id=0
@@ -375,7 +324,23 @@ def save_cell_mut_matrix():
         for idx, row in df.iterrows():
             for i,col in enumerate(list(df.columns)):
                 cell_feature[cell_dict[idx]-1,i]= row[col]
-        print(f"cell_dict size is {len(cell_dict)} and mut size is {cell_feature.shape[1]}")
+    elif config["dataset"]["dataset_name"]=="GDSC":
+        mut_file1= mut_file = config["dataset"]["dataset_root"]+"/cell_mutation_dim_1_num_0.csv"
+        mut_file2= mut_file = config["dataset"]["dataset_root"]+"/cell_mutation_dim_1_num_1.csv"
+        df1= pd.read_csv(mut_file1, index_col=0)
+        df2= pd.read_csv(mut_file2, index_col=0)
+        df = pd.concat([df1, df2], axis=1)
+        cell_id = 0
+        cell_dict = {}
+        for cell in list(df.index):
+            cell_dict[cell] = cell_id
+            cell_id += 1
+        cell_feature = np.zeros((df.shape[0], df.shape[1]))
+        for idx, row in df.iterrows():
+            for i, col in enumerate(list(df.columns)):
+                cell_feature[cell_dict[idx] - 1, i] = row[col]
+
+    print(f"The {config['dataset']['dataset_name']} dataset contains {len(cell_dict)}  cells with mutation feature size of {cell_feature.shape[1]}")
     return cell_dict, cell_feature
 
 
@@ -383,30 +348,27 @@ def save_cell_mut_matrix():
 This part is used to extract the drug - cell interaction strength. it contains IC50, AUC, Max conc, RMSE, Z_score
 """
 def get_cell_drug_response_list():
-
+    drug_response_file = config["dataset"]["dataset_root"] + "/cell_drug.csv"
     if config["dataset"]["dataset_name"]=="GDSC":
-
-        f = open(folder + "PANCANCER_IC.csv")
-        reader = csv.reader(f)
-        next(reader)
-        temp_data = []
-        bExist = np.zeros((len(drug_dict), len(cell_dict)))
-        for item in reader:
-            drug = item[0]
-            cell = item[3]
-            ic50 = item[8]
-            ic50 = 1 / (1 + pow(math.exp(float(ic50)), -0.1))
-            temp_data.append((drug, cell, ic50))
-    elif config["dataset"]["dataset_name"] == "CCLE":
-        drug_response_file=config["dataset"]["dataset_root"]+"/drugResponse_ccle.csv"
-        df = pd.read_csv(drug_response_file,index_col=0)
+        # null_mask = config["dataset"]["dataset_root"] + "/cell_drug.csv"
+        df = pd.read_csv(drug_response_file, index_col=0)
         temp_data = []
         for idx, row in df.iterrows():
             for col in df.columns:
-                if not np.isnan(df.loc[idx, col]):
+                if not pd.isnull(df.loc[idx, col]):
                     ic50 = 1 / (1 + pow(math.exp(float(df.loc[idx, col])), -0.1))
                     temp_data.append((col, idx, ic50))
-    print(f"The dataset wil contain {len(temp_data)} records")
+    elif config["dataset"]["dataset_name"]=="CCLE":
+        df = pd.read_csv(drug_response_file, index_col=0)
+        temp_data = []
+        for idx, row in df.iterrows():
+            for col in df.columns:
+                if not pd.isnull(df.loc[idx, col]):
+                    ic50 = 1 / (1 + pow(math.exp(float(df.loc[idx, col])), -0.1))
+                    temp_data.append((col, idx, ic50))
+
+
+    print(f"The final dataset wil contain {len(temp_data)} records")
     return temp_data
 
 def save_mix_drug_cell_matrix():
@@ -415,11 +377,18 @@ def save_mix_drug_cell_matrix():
     cell_dict, cell_feature = save_cell_mut_matrix()
     drug_dict, drug_smile, smile_graph = load_drug_smile()
 
+    for k,v in drug_dict.items():
+        print(f"Drug dict key: {k}---value:{v}")
+        break
+    for k,v in cell_dict.items():
+        print(f"cell dict key: {k}---value:{v}")
+        break
     # smile_graph
 
     bExist = np.zeros((len(drug_dict), len(cell_dict)))
     temp_data = get_cell_drug_response_list()
     # temp_data is a list of tuples (drug, cell, IC50)
+    print(temp_data[0])
     xd = []
     xc = []
     y = []
@@ -429,15 +398,19 @@ def save_mix_drug_cell_matrix():
     random.shuffle(temp_data)
     count_id=0
     for data in temp_data:
+
         drug, cell, ic50 = data
-        if drug in drug_dict and cell in cell_dict:
+
+        if int(drug) in list(drug_dict.keys()) and cell in list(cell_dict.keys()):
+
             count_id+=1
-            xd.append(drug_smile[drug_dict[drug]])
+            xd.append(drug_smile[drug_dict[int(drug)]])
             xc.append(cell_feature[cell_dict[cell]])
             y.append(ic50)
-            bExist[drug_dict[drug], cell_dict[cell]] = 1
+            bExist[drug_dict[int(drug)], cell_dict[cell]] = 1
             lst_drug.append(drug)
             lst_cell.append(cell)
+
     print(f" Total number of drug is {len(xd)} and total number of cell is {len(xc)}")
     with open('drug_dict', 'wb') as fp:
         pickle.dump(drug_dict, fp)
@@ -567,7 +540,7 @@ def save_blind_drug_matrix():
 
 
 def save_blind_cell_matrix():
-    # f = open(folder + "PANCANCER_IC.csv")
+    # f = open(config["dataset"]["dataset_root"] + "PANCANCER_IC.csv")
     # reader = csv.reader(f)
     # next(reader)
     # random.seed(num_seed)
@@ -713,4 +686,3 @@ def load_dataset(choice="mix",dataset_size="all"):
         print("Invalide option, wrong type of experiment dataset type ")
 
     return main(Batch_Size,dataset_size)
-

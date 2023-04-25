@@ -180,8 +180,10 @@ class GraphRegression(MessagePassing):
         self.conv_xt_3 = nn.Conv1d(in_channels=n_filters * 2, out_channels=n_filters * 4, kernel_size=8)
         dim0 =n_filters * 4
         self.pool_xt_3 = nn.MaxPool1d(3)
-        self.fc1_xt = nn.Linear(2176, self.output_conv2)#2944
-
+        if config["dataset"]["dataset_name"]=="CCLE":
+            self.fc1_xt = nn.Linear(7296, self.output_conv2)
+        elif  config["dataset"]["dataset_name"]=="GDSC":
+            self.fc1_xt = nn.Linear(7296, self.output_conv2)
         # combined layers
         self.fc1 = nn.Linear(2 * self.output_conv2, 1024)
         self.fc2 = nn.Linear(1024, 128)

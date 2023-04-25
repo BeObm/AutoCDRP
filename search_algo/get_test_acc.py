@@ -16,7 +16,7 @@ from GNN_models.graph_regression import *
 set_seed()
 
 def Evaluate_best_model(submodel):
-    torch.manual_seed(num_seed)
+    set_seed()
     z_final= int(config["param"]["z_final"])
     type_task =config["dataset"]["type_task"]
     epochs= int(config["param"]["best_model_epochs"])   
