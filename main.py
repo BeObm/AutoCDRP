@@ -23,15 +23,27 @@ from datetime import date
 import random
 import time
 from settings.config_file import *
-
+import argparse
 
 if __name__ == "__main__":
     set_seed()
     torch.cuda.empty_cache()
-    create_config_file()
-   
-    create_paths()  
+
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset_name", help="Dataset name", default="CCLE")
+    parser.add_argument("--dataset_root", help="Dataset root", default="CCLE")
+    parser.add_argument("--experiment", type=str, default="mix", help="type of experiment") # "cell_blind", "drug_blind","mix"
+    args = parser.parse_args()
+
+    create_config_file(args.dataset_name,args.experiment)
+
+    add_config("dataset", "dataset_root", f"{project_root_dir}/data/{config['dataset']['dataset_name']}")
+    add_config("dataset", "dataset_name", args.dataset_name)
+    add_config("dataset", "type_experiment", args.experiment)
     manage_budget()
+    create_paths(args.dataset_name,args.experiment)
+
 
     torch.cuda.empty_cache()
 

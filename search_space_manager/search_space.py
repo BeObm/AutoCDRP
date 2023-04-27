@@ -59,20 +59,12 @@ def create_e_search_space(a=0,b=1):   # a<b
     sp['dropout']= [0.2, 0.5]
     sp['lr']= [5e-4,1e-4, 5e-3]
     sp['weight_decay']=[1e-4, 5e-4]
-    
-    if "graph" in config["dataset"]['type_task']:
-       
-        sp['criterion']= ["MSELoss","smooth_l1_loss"] #
-        sp['pooling']=["global_max_pool"]
-        sp["optimizer"] = ["adam"]#
-        sp['normalize1'] =["BatchNorm"]
-        sp['normalize2'] =["BatchNorm"]
-    elif type_task=='node classification' or type_task=="link prediction": 
-       
-        sp['criterion']= ['CrossEntropyLoss'] #,"MultiMarginLoss",""fn_loss"
-        sp["optimizer"] = ["adam"]
-        sp['normalize1'] =["False","InstanceNorm"]
-        sp['normalize2'] =["False","InstanceNorm"]
+    sp['criterion'] = ["CrossEntropyLoss", "MultiMarginLoss"]
+    sp['pooling']=["global_max_pool"]
+    sp["optimizer"] = ["adam"]#
+    sp['normalize1'] =["BatchNorm"]
+    sp['normalize2'] =["BatchNorm"]
+
         
     # For quick test the following search space will be used ## MUwech
     total_choices=0    

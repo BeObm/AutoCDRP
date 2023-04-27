@@ -14,6 +14,7 @@ from torch_geometric.data import InMemoryDataset
 from torch_geometric import data as DATA
 import torch
 import pandas as pd
+from collections import defaultdict
 from settings.config_file import *
 set_seed()
 import requests
@@ -233,21 +234,10 @@ def one_of_k_encoding_unk(x, allowable_set):
 
 
 def get_drug_smiles(drug_cid):
-    """
-    Retrieve the SMILES string for a given drug ID using the PubChem API.
-    """
-    # Construct the API URL
     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{drug_cid}/property/CanonicalSMILES/json"
-
-    # Send the API request
     response = requests.get(url)
-
-    # Parse the JSON response
     json_data = response.json()
-
-    # Extract the SMILES string
     smiles = json_data["PropertyTable"]["Properties"][0]["CanonicalSMILES"]
-
     return smiles
 
 
@@ -291,21 +281,42 @@ def load_drug_smile():
   elif config["dataset"]["dataset_name"]=="GDSC":
       drug_id_file = config["dataset"]["dataset_root"] + "/drug_feature.csv"
       cid_col = 0
+
+  try:
+      smile_df = pd.read_csv(f'{config["dataset"]["dataset_root"]}/drug_smiles.csv')
+  except:
+      pass
+
   df = pd.read_csv(drug_id_file)
   drug_dict={}
   drug_smile=[]
   smile_graph={}
   drug_id=0
+  save_smile_list=False
   for idx,row in df.iterrows():
       if df.iloc[idx,cid_col] not in drug_dict:
           drug_dict[int(df.iloc[idx,cid_col])]=drug_id
           drug_id+=1
-      drug_smile.append(get_drug_smiles(int(df.iloc[idx,cid_col])))
+      try:
+          smiles=(smile_df.loc[smile_df['drud_cid']==int(df.iloc[idx,cid_col])])['drug_SMILES'].item()
+          drug_smile.append(smiles)
+      except:
+             save_smile_list=True
+             drug_smile.append(get_drug_smiles(int(df.iloc[idx,cid_col])))
   smile_graph = {}
   for smile in drug_smile:
       g = smile_to_graph(smile)
       smile_graph[smile] = g
   print(f'this is drug dict ; {drug_dict}')
+
+  if save_smile_list==True:
+      save_smile=defaultdict(list)
+      for i, k in enumerate(list(drug_dict.keys())):
+          save_smile["drud_cid"].append(k)
+          save_smile["drug_SMILES"].append(drug_smile[i])
+
+      smile_list=pd.DataFrame(save_smile)
+      smile_list.to_csv(f"{config['dataset']['dataset_root']}/drug_smiles.csv")
 
   return drug_dict, drug_smile, smile_graph
 
@@ -348,25 +359,48 @@ def save_cell_mut_matrix():
 This part is used to extract the drug - cell interaction strength. it contains IC50, AUC, Max conc, RMSE, Z_score
 """
 def get_cell_drug_response_list():
-    drug_response_file = config["dataset"]["dataset_root"] + "/cell_drug.csv"
-    if config["dataset"]["dataset_name"]=="GDSC":
-        # null_mask = config["dataset"]["dataset_root"] + "/cell_drug.csv"
-        df = pd.read_csv(drug_response_file, index_col=0)
-        temp_data = []
-        for idx, row in df.iterrows():
-            for col in df.columns:
-                if not pd.isnull(df.loc[idx, col]):
-                    ic50 = 1 / (1 + pow(math.exp(float(df.loc[idx, col])), -0.1))
-                    temp_data.append((col, idx, ic50))
-    elif config["dataset"]["dataset_name"]=="CCLE":
-        df = pd.read_csv(drug_response_file, index_col=0)
-        temp_data = []
-        for idx, row in df.iterrows():
-            for col in df.columns:
-                if not pd.isnull(df.loc[idx, col]):
-                    ic50 = 1 / (1 + pow(math.exp(float(df.loc[idx, col])), -0.1))
-                    temp_data.append((col, idx, ic50))
 
+    if config["dataset"]["dataset_name"]=="GDSC":
+
+        drug_response_file = config["dataset"]["dataset_root"] + "/cell_drug.csv"
+        threshold_df = pd.read_csv(config["dataset"]["dataset_root"] + "/threshold.csv",index_col=0)
+        df = pd.read_csv(drug_response_file, index_col=0)
+        temp_data = []
+        for idx, row in df.iterrows():
+            for col in df.columns:
+                if not pd.isnull(df.loc[idx, col]):
+                    if "regression" in config['dataset']['type_task']:
+                        ic50 = 1 / (1 + pow(math.exp(float(df.loc[idx, col])), -0.1))
+                        temp_data.append((col, idx, ic50))
+                    elif "classification" in config['dataset']['type_task']:
+                        ic50 = float(df.loc[idx, col])
+                        threshold=threshold_df.loc[col,"threshold"]
+                        if ic50< threshold:
+                             temp_data.append((col, idx, 0))
+                        else:
+                            temp_data.append((col, idx, 1))
+
+    elif config["dataset"]["dataset_name"]=="CCLE":
+
+        if "regression" in config['dataset']['type_task']:
+            drug_response_file = config["dataset"]["dataset_root"] + "/cell_drug.csv"
+
+            df = pd.read_csv(drug_response_file, index_col=0)
+            temp_data = []
+            for idx, row in df.iterrows():
+                for col in df.columns:
+                    if not pd.isnull(df.loc[idx, col]):
+                        ic50 = 1 / (1 + pow(math.exp(float(df.loc[idx, col])), -0.1))
+                        temp_data.append((col, idx, ic50))
+        elif "classification" in config['dataset']['type_task']:
+            drug_response_file = config["dataset"]["dataset_root"] + "/cell_drug_binary.csv"
+
+            df = pd.read_csv(drug_response_file, index_col=0)
+            temp_data = []
+            for idx, row in df.iterrows():
+                for col in df.columns:
+                    if not pd.isnull(df.loc[idx, col]):
+                        temp_data.append((col, idx, df.loc[idx, col]))
 
     print(f"The final dataset wil contain {len(temp_data)} records")
     return temp_data

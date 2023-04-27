@@ -36,12 +36,11 @@ def set_seed(seed=num_seed):
 project_root_dir = os.path.abspath(os.getcwd())
 
 type_task = "graph regression"
-dataset_name = "GDSC"
-run_detail="final_run"
-folder = f"{project_root_dir}/data/{dataset_name}/"
+
+
 
 # Second  level of  running configurations
-def create_config_file():
+def create_config_file(dataset_name,run_detail):
     configs_folder = osp.join(project_root_dir, f'results/{type_task}/{dataset_name}/{RunCode}({run_detail})')
     os.makedirs(configs_folder, exist_ok=True)
     config_filename = f"{configs_folder}/ConfigFile_{RunCode}.ini"
@@ -51,7 +50,6 @@ def create_config_file():
         "type_experiment": "mix",  # "cell_blind", "drug_blind","mix"
         "dataset_name": dataset_name,  # Citeseer,
         'type_task': type_task,  # it could be "graph classification", "link prediction",node classification
-        "dataset_source": dataset_name,
         "dataset_root": f"{project_root_dir}/data/{dataset_name}"
     }
 
@@ -60,16 +58,16 @@ def create_config_file():
         "project_dir": project_root_dir,
         'config_filename': config_filename,
         "run_code": RunCode,
-        "budget": 500,
+        "budget": 1000,
         "k": 100,
         "z_sample": 1,  # Number of time  sampled models are trained before we report their performance
         "z_topk": 1,
         "z_final": 1,
         "nfcode": 56,  # number of digit for each function code when using embedding method
         "noptioncode": 8,
-        "sample_model_epochs": 1,
-        "topk_model_epochs": 1,
-        "best_model_epochs": 20,
+        "sample_model_epochs": 200,
+        "topk_model_epochs": 200,
+        "best_model_epochs": 1000,
         "encoding_method": "one_hot",
         "type_sampling": "controlled_stratified_sampling",  # random_sampling, uniform_sampling, controlled_stratified_sampling
         "predictor_dataset_type": "graph",
@@ -77,8 +75,8 @@ def create_config_file():
         'type_input_graph': "directed",
         "use_paralell": "yes",
         "learning_type": "supervised",
-        "predict_sample": 5000,
-        "batch_sample": 500
+        "predict_sample": 500000,
+        "batch_sample": 5000
     }
 
     config["predictor"] = {
@@ -87,7 +85,7 @@ def create_config_file():
         "drop_out": 0.3,
         "lr": 0.0005,
         "wd": 0.0001,
-        "num_epoch": 10,
+        "num_epoch": 500,
         "comit_test": "yes"
     }
 
@@ -109,7 +107,7 @@ def add_config(section_, key_, value_, ):
         config.write(conf)
 
 
-def create_paths():
+def create_paths(dataset_name,run_detail):
     # Create here path for recording model performance distribution
     result_folder = osp.join(project_root_dir, f'results/{type_task}/{dataset_name}/{RunCode}({run_detail})')
     os.makedirs(result_folder, exist_ok=True)
@@ -132,8 +130,8 @@ def create_paths():
     add_config("path", "predictor_results_folder", predictor_results_folder)
 
     add_config("path", "predictor_weight_path", result_folder)
-    # add_config("path", "predictor_dataset_folder", predictor_results_folder)  #uncomment to build predictor dataset if predictor training dataset is not available
-    add_config("path", "predictor_dataset_folder", "results/graph regression/CCLE/20-04_13h22(final_run)/predictor_training_data")
+    add_config("path", "predictor_dataset_folder", predictor_results_folder)  #uncomment to build predictor dataset if predictor training dataset is not available
+    # add_config("path", "predictor_dataset_folder", "results/graph regression/CCLE/20-04_13h22(final_run)/predictor_training_data")
     # add_config("path", "predictor_dataset_folder", "data/predictor_dataset_blind-cell_stratified")
     # add_config("path", "predictor_dataset_folder", "data/predictor_dataset_mix_uniform")
     # add_config("path", "predictor_dataset_folder", "data/predictor_dataset_mix_stratified")
