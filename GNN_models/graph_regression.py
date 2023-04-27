@@ -20,7 +20,7 @@ import torch.nn as nn
 
 
 class GraphRegression(MessagePassing):
-    def __init__(self, param_dict,n_output=1,n_filters=32):
+    def __init__(self, param_dict,n_output=2,n_filters=32):
         super(GraphRegression, self).__init__()
         self.aggr1 = param_dict['aggregation1']
         self.aggr2 = param_dict['aggregation2']
@@ -216,19 +216,7 @@ class GraphRegression(MessagePassing):
         x = self.mlp_x(x)
 
 
-        # # protein input feed-forward
-        # target = data.target
-        # target =self.mlp_target(target)
-        #
-        # # Concatenate drug feature with CCL feature
-        # out = torch.cat((x, target), dim=1)
-        # x = self.dropout2(x)
-        # #  Apply a final regression
-        # out = self.out1(out)
-        # out = nn.Sigmoid()(out)
-        #
-        # return out
-        # protein input feed-forward:
+
         target = data.target
         target = target[:, None, :]
         # 1d conv layers
@@ -256,7 +244,9 @@ class GraphRegression(MessagePassing):
         xc = self.relu(xc)
         xc = self.dropout2(xc)
         out = self.out2(xc)
-        out = nn.Sigmoid()(out)
+        # out = nn.Sigmoid()(out)
+        out = F.log_softmax(out, dim=-1)
+
         return out
 
 def train_gc(model, train_loader, criterion, optimizer,epoch=1):
@@ -266,7 +256,9 @@ def train_gc(model, train_loader, criterion, optimizer,epoch=1):
         inputs = data.to(device)
         optimizer.zero_grad()  # Clear gradients.
         out = model(inputs)  # Perform a single forward pass.
-        train_loss = criterion(out, data.y.view(-1, 1).float().to(device))
+        y=data.y
+
+        train_loss = criterion(out, y)
         if torch.cuda.device_count() > 1 and config["param"]["use_paralell"] == "yes":
             train_loss.mean().backward()
         else:
@@ -284,10 +276,9 @@ def test_gc(model, test_loader, paralell=True):
     ped_list, label_list = [], []
     for data in test_loader:
         data= data.to(device)
-        pred = model(data)
+        pred = model(data).max(dim=1)[1]
         ped_list = np.append(ped_list, pred.cpu().detach().numpy())
         label_list = np.append(label_list, data.y.cpu().detach().numpy())
-    RMSE,pearson,kendalltau,spearmanr = evaluate_model_predictor(label_list, ped_list, "Sampling_distribution")
-    return RMSE,pearson,kendalltau,spearmanr
 
-
+    aucpr,auc,mcc,acc = evaluate_model_predictor(label_list, ped_list, "Sampling_distribution")
+    return aucpr,auc,mcc,acc

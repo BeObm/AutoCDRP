@@ -10,6 +10,12 @@ from sklearn.metrics import mean_squared_error,r2_score
 import time
 from tqdm import tqdm
 import torch.nn as nn
+import importlib
+import matplotlib.pyplot as plt
+from sklearn.metrics import precision_recall_curve, roc_auc_score, average_precision_score, matthews_corrcoef
+from sklearn.metrics import precision_score,auc, recall_score, balanced_accuracy_score, accuracy_score,f1_score
+import warnings
+
 import math
 from scipy import stats
 from search_algo.utils import *
@@ -487,14 +493,14 @@ def get_prediction_from_table(performance_record, e_search_space):
                  df_temp[col]=lb_make.fit_transform(df_temp[col])
     
          predicted_accuracy = regr.predict(df_temp)
-         df['Accuracy']=predicted_accuracy
-         TopK=df.nlargest(k,'Accuracy',keep="all")
+         df['AUC_PR']=predicted_accuracy
+         TopK=df.nlargest(k,'AUC_PR',keep="all")
          TopK=TopK[:k]
          TopK_model.append(TopK)
 
    TopK_models = pd.concat(TopK_model)  
   
-   TopK_models=TopK_models.nlargest(k,'Accuracy',keep="all")
+   TopK_models=TopK_models.nlargest(k,'AUC_PR',keep="all")
    TopK_final=TopK_models[:k].sample(frac=1).reset_index(drop=True) 
    prediction_time= round(time.time() - start_predict_time,2)
    print(TopK_final)  
@@ -503,6 +509,55 @@ def get_prediction_from_table(performance_record, e_search_space):
    return TopK_final
 
 def evaluate_model_predictor(y_true, y_pred,title="Predictor training"):
+
+   dataset_name =config["dataset"]["dataset_name"]
+   
+   auc = round(roc_auc(y_true, y_pred),10)
+   aucpr = round(auc_pr(y_true, y_pred),10)
+   mcc = round(MCC_score(y_true, y_pred),10)
+   acc = round(Accuracy_score(y_true, y_pred),10)
+
+
+   if title != "Sampling_distribution":
+       if title =="Predictor training test":
+           col="red"
+       elif title=="Predictor validation test":
+           col="dodgerblue"
+       elif title=="Predictor evaluation test":
+           col="limegreen"
+       else:
+           col="red"
+
+
+          # Visualising the Test set results
+
+       # nb=np.array([i for i in range(min1,min1)])
+       plt.figure(figsize=(8, 8))
+
+       a=min(y_pred)
+       b=min(y_true)
+
+       xmin= min(min(y_pred),min(y_true))
+       xmax=max(max(y_pred),max(y_true))
+
+
+       lst =[xmin,xmax]
+       # lst =[a for a in range(0,100)]
+       plt.plot(lst,  lst,  color='black', linewidth=0.6)
+       plt.scatter(y_true, y_pred,  color=col, linewidth=0.8)
+
+
+       # plt.title(f'(r={round(pearson,2)},rho={round(spearmanr,2)},tau={kendalltau})',y=1.02,size=28)#,R2_Score={R2_Score}
+       plt.xlabel(f'True RMSE',fontsize=28)
+       plt.ylabel(f'Predicted RMSE',fontsize=28)#,fontweight = 'bold'
+       # plt.legend()
+       plt.grid()
+       # plt.show()
+       plt.savefig(f'{config["path"]["plots_folder"]}/{title}_{dataset_name}.pdf',bbox_inches="tight",dpi=300)
+   return aucpr,auc,mcc,acc
+
+
+def evaluate_model_predictor0(y_true, y_pred,title="Predictor training"):
 
    dataset_name =config["dataset"]["dataset_name"]
    # print(f"true value = {y_true} and predicted value is {y_pred}")
@@ -551,3 +606,27 @@ def evaluate_model_predictor(y_true, y_pred,title="Predictor training"):
        plt.savefig(f'{config["path"]["plots_folder"]}/{title}_{dataset_name}.pdf',bbox_inches="tight",dpi=300)
    return RMSE,pearson,kendalltau,spearmanr
 
+
+
+def roc_auc(y_true, y_pred):
+    auc = roc_auc_score(y_true, y_pred)
+    return auc.astype(float)
+
+def auc_pr(y_true, y_pred):
+
+    precision, recall, _ = precision_recall_curve(y_true, y_pred)
+    auc_pr = auc(recall, precision)
+    return  auc_pr
+
+
+def MCC_score(y_true, y_pred):
+
+    mcc = matthews_corrcoef(y_true, y_pred)
+
+    return mcc
+
+
+def Accuracy_score(y_true, y_pred):
+
+    acc_score = accuracy_score(y_true, y_pred)
+    return acc_score

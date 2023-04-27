@@ -42,7 +42,7 @@ def get_performance_distributions(e_search_space):  # get performance distributi
     # print("example of model_config", model_list[0])
     predictor_dataset=defaultdict(list)
     graph_list=[]
-    best_rmse = 999
+    best_AUC_PR = 999
     print(f' \n Constructing a dataset consisting of {n_sample} models for predictor training. \n')
 
     for no, submodel in tqdm(enumerate(model_list)):
@@ -58,32 +58,29 @@ def get_performance_distributions(e_search_space):  # get performance distributi
                start_time = time.time()
                train_loss = train_model(model,train_loader, criterion, optimizer,epoch+1)
                epoch_time = time.time() - start_time
-               # print(f"training one epoch costs {epoch_time}")
-               # if train_loss <best_loss:
-               #     best_loss = train_loss
-               #     torch.save(model.state_dict(),best_loss_param_path )
+               
             start_time = time.time()
-            test_rmse= round(test_model(model, test_loader)[0],4)
+            test_aucpr= round(test_model(model, test_loader)[0],4)
             test_time = time.time() - start_time
             # print(f"testing one epoch costs {test_time}")
-            if  math.isnan(test_rmse):
-                test_rmse= 999
+            if  math.isnan(test_aucpr):
+                test_aucpr= 999
            
-            if test_rmse <= best_rmse:
-                best_rmse=test_rmse
+            if test_aucpr <= best_AUC_PR:
+                best_AUC_PR=test_aucpr
                 best_sample=copy.deepcopy(submodel)
-                best_sample["RMSE"]=test_rmse
-                print(f'-->  RMSE = {test_rmse}  ===++ Actual Best Performance')
+                best_sample["AUC_PR"]=test_aucpr
+                print(f'-->  AUC_PR = {test_aucpr}  ===++ Actual Best Performance')
 
             else :
-                  print(f'--> RMSE = {test_rmse}')
+                  print(f'--> AUC_PR = {test_aucpr}')
 
 
             #  transform model configuration into graph data
             if (config["param"]["predictor_dataset_type"])=="graph":
                 # edge_index=get_edge_index(model_list[0])
                 x = get_nodes_features(submodel,e_search_space)
-                y=np.array(test_rmse)
+                y=np.array(test_aucpr)
                 y=torch.tensor(y,dtype=torch.float32).view(-1,1)
                 graphdata=Data(x=x,edge_index =edge_index,y=y,num_nodes=x.shape[0],model_config_choices = deepcopy(submodel))
                 graph_list.append(graphdata)
@@ -95,13 +92,13 @@ def get_performance_distributions(e_search_space):  # get performance distributi
                        predictor_dataset[function].append(option[0])
                     elif config["param"]["encoding_method"] =="embedding":
                        predictor_dataset[function].append(option[2])
-                predictor_dataset["RMSE"].append(test_rmse)
+                predictor_dataset["AUC_PR"].append(test_aucpr)
 
                              
                 
     sample_time= round(time.time() - timestart,2)
     add_config("time","distribution_time",sample_time)
-    add_config("results","best_sample_RMSE",best_rmse)
+    add_config("results","best_sample_AUC_PR",best_AUC_PR)
     
     if (config["param"]["predictor_dataset_type"])=="graph":
                  
@@ -120,8 +117,8 @@ def get_best_model(topk_list,option_decoder):
     torch.manual_seed(num_seed)
     best_loss_param_path =f"{config['path']['performance_distribution_folder']}/best_dist_param.pth"
     
-    pred_rmse=[]
-    real_rmse=[]
+    pred_AUC_PR=[]
+    real_AUC_PR=[]
     encoding_method =config["param"]["encoding_method"]
     type_task =config["dataset"]["type_task"]
     z_topk= int(config["param"]["z_topk"])
@@ -132,7 +129,7 @@ def get_best_model(topk_list,option_decoder):
     train_loader, val_loader, test_loader = load_dataset(config["dataset"]["type_experiment"],"not all")
     task_model,train_model,test_model=get_train(type_task)
 
-    min_rmse=999
+    min_AUC_PR=999
 
     print("Training tok k models ...")
 
@@ -148,9 +145,9 @@ def get_best_model(topk_list,option_decoder):
         bestmodel = copy.deepcopy(submodel)
 
         for k, v in bestmodel.items():
-            if k != "RMSE":
+            if k != "AUC_PR":
                 bestmodel[k] = v[0]
-    print(f"Best sample RMSE = {Y}")
+    print(f"Best sample AUC_PR = {Y}")
     for idx,row in tqdm(topk_list.iterrows()):
         dict_model={}   #
         
@@ -160,7 +157,7 @@ def get_best_model(topk_list,option_decoder):
     
         elif (config["param"]["predictor_dataset_type"])=="table":
             for function in topk_list.columns: 
-                if function !="RMSE":
+                if function !="AUC_PR":
                     if config["param"]["encoding_method"] =="one_hot":
                       dict_model[function]=row[function]
                     elif config["param"]["encoding_method"] =="embedding":
@@ -176,7 +173,7 @@ def get_best_model(topk_list,option_decoder):
         except:
              pass
         
-        RMSE_list=[]
+        AUC_PR_list=[]
 
         for i in range(z_topk):
             best_loss=999
@@ -190,22 +187,22 @@ def get_best_model(topk_list,option_decoder):
             best_model, criterion, optimizer =get_model_instance2(dict_model,task_model)
             best_model.load_state_dict(torch.load(best_loss_param_path))          
                     
-            val_rmse= test_model(best_model, val_loader)[0]
-            RMSE_list.append(val_rmse)
-        val_rmse = round(stat.mean(RMSE_list),4)
+            val_AUC_PR= test_model(best_model, val_loader)[0]
+            AUC_PR_list.append(val_AUC_PR)
+        val_AUC_PR = round(stat.mean(AUC_PR_list),4)
        
          
-        pred_rmse.append(row["RMSE"])
-        real_rmse.append(val_rmse)
+        pred_AUC_PR.append(row["AUC_PR"])
+        real_AUC_PR.append(val_AUC_PR)
                  
-        if min_rmse > val_rmse:
-            min_rmse=val_rmse
+        if min_AUC_PR > val_AUC_PR:
+            min_AUC_PR=val_AUC_PR
             bestmodel=copy.deepcopy(dict_model)
-    best_rmse=min_rmse
+    best_AUC_PR=min_AUC_PR
     best_acc_time = round(time.time() - start_time,2)
     add_config("time","best_acc_time",best_acc_time)
    
-    rmse,pearson_test,kendall_test,spearman_test= evaluate_model_predictor(real_rmse,pred_rmse,title="Predictor evaluation")
+    AUC_PR,pearson_test,kendall_test,spearman_test= evaluate_model_predictor(real_AUC_PR,pred_AUC_PR,title="Predictor evaluation")
     # add_config("results","R2_Score_test",R2_Score_test)
     # add_config("results","pearson_test",pearson_test)
     # add_config("results","kendall_test",kendall_test)

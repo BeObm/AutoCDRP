@@ -59,7 +59,7 @@ def create_e_search_space(a=0,b=1):   # a<b
     sp['dropout']= [0.2, 0.5]
     sp['lr']= [5e-4,1e-4, 5e-3]
     sp['weight_decay']=[1e-4, 5e-4]
-    sp['criterion'] = ["CrossEntropyLoss", "MultiMarginLoss"]
+    sp['criterion'] = ["CrossEntropyLoss"]
     sp['pooling']=["global_max_pool"]
     sp["optimizer"] = ["adam"]#
     sp['normalize1'] =["BatchNorm"]

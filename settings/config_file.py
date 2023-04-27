@@ -35,7 +35,7 @@ def set_seed(seed=num_seed):
 
 project_root_dir = os.path.abspath(os.getcwd())
 
-type_task = "graph regression"
+type_task = "graph classification"
 
 
 
@@ -58,16 +58,16 @@ def create_config_file(dataset_name,run_detail):
         "project_dir": project_root_dir,
         'config_filename': config_filename,
         "run_code": RunCode,
-        "budget": 1000,
-        "k": 100,
+        "budget": 50,
+        "k": 5,
         "z_sample": 1,  # Number of time  sampled models are trained before we report their performance
         "z_topk": 1,
         "z_final": 1,
         "nfcode": 56,  # number of digit for each function code when using embedding method
         "noptioncode": 8,
-        "sample_model_epochs": 200,
-        "topk_model_epochs": 200,
-        "best_model_epochs": 1000,
+        "sample_model_epochs": 5,
+        "topk_model_epochs": 1,
+        "best_model_epochs": 1,
         "encoding_method": "one_hot",
         "type_sampling": "controlled_stratified_sampling",  # random_sampling, uniform_sampling, controlled_stratified_sampling
         "predictor_dataset_type": "graph",
@@ -75,8 +75,8 @@ def create_config_file(dataset_name,run_detail):
         'type_input_graph': "directed",
         "use_paralell": "yes",
         "learning_type": "supervised",
-        "predict_sample": 500000,
-        "batch_sample": 5000
+        "predict_sample": 500,
+        "batch_sample": 50
     }
 
     config["predictor"] = {
@@ -85,7 +85,7 @@ def create_config_file(dataset_name,run_detail):
         "drop_out": 0.3,
         "lr": 0.0005,
         "wd": 0.0001,
-        "num_epoch": 500,
+        "num_epoch": 5,
         "comit_test": "yes"
     }
 

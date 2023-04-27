@@ -69,13 +69,14 @@ class TestbedDataset(InMemoryDataset):
             print('Converting SMILES to graph: {}/{}'.format(i + 1, data_len))
             smiles = xd[i]
             target = xt[i]
-            labels = y[i]
+            labels = int(y[i])
+            print("label::",labels)
             # convert SMILES to molecular representation using rdkit
             c_size, features, edge_index = smile_graph[smiles]
             # make the graph ready for PyTorch Geometrics GCN algorithms:
             GCNData = DATA.Data(x=torch.Tensor(features),
                                 edge_index=torch.LongTensor(edge_index).transpose(1, 0),
-                                y=torch.FloatTensor([labels]))
+                                y=labels) # torch.FloatTensor([labels]))
 
             # require_grad of cell-line for saliency map
             if self.saliency_map == True:
@@ -394,13 +395,13 @@ def get_cell_drug_response_list():
                         temp_data.append((col, idx, ic50))
         elif "classification" in config['dataset']['type_task']:
             drug_response_file = config["dataset"]["dataset_root"] + "/cell_drug_binary.csv"
-
             df = pd.read_csv(drug_response_file, index_col=0)
             temp_data = []
             for idx, row in df.iterrows():
                 for col in df.columns:
                     if not pd.isnull(df.loc[idx, col]):
-                        temp_data.append((col, idx, df.loc[idx, col]))
+                        temp_data.append((col, idx, int(df.loc[idx, col])))
+
 
     print(f"The final dataset wil contain {len(temp_data)} records")
     return temp_data
