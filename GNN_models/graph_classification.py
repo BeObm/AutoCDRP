@@ -19,9 +19,9 @@ from settings.config_file import *
 import torch.nn as nn
 
 
-class GraphClassification(MessagePassing):
+class GNN_Model(MessagePassing):
     def __init__(self, param_dict, n_output=2, n_filters=32):
-        super(GraphClassification, self).__init__()
+        super(GNN_Model, self).__init__()
         self.aggr1 = param_dict['aggregation1']
         self.aggr2 = param_dict['aggregation2']
         self.hidden_channels = int(param_dict['hidden_channels'])
@@ -148,7 +148,7 @@ class GraphClassification(MessagePassing):
         return out
 
 
-def train_gc(model, train_loader, criterion, optimizer, epoch=1):
+def train_function(model, train_loader, criterion, optimizer, epoch=1):
     avg_loss = []
     loss_all = 0
     for batch_idx, data in enumerate(train_loader):  # Iterate in batches over the training dataset.
@@ -166,7 +166,7 @@ def train_gc(model, train_loader, criterion, optimizer, epoch=1):
 
 
 @torch.no_grad()
-def test_gc(model, test_loader, paralell=True):
+def test_function(model, test_loader, paralell=True):
     model.eval()
     y_true, y_pred = [], []
 

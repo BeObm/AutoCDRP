@@ -21,7 +21,7 @@ def Evaluate_best_model(submodel):
     type_task =config["dataset"]["type_task"]
     epochs= int(config["param"]["best_model_epochs"])   
     best_loss_param_path =f"{config['path']['performance_distribution_folder']}/best_model_param.pth"
-
+    search_metric = config["param"]["search_metric"]
   
     type_task =config["dataset"]["type_task"]
    
@@ -36,19 +36,18 @@ def Evaluate_best_model(submodel):
    
       
     model, criterion, optimizer =get_model_instance2(submodel,gcn)
-    rmse_list=[]
+
     best_model_training_record=defaultdict(list)
 
-    best_loss =999
+    best_loss =99999999
     for epoch in range(epochs):
        train_loss = train_model(model,train_loader, criterion, optimizer,epoch+1)
-       RMSE, pearson, kendalltau, spearmanr = test_model(model, test_loader)
+       train_performances = test_model(model, test_loader)
+
        best_model_training_record["epoch"].append(epoch)
        best_model_training_record["train_loss"].append(train_loss)
-       best_model_training_record["RMSE"].append(RMSE)
-       best_model_training_record["pearson"].append(pearson)
-       best_model_training_record["kendalltau"].append(kendalltau)
-       best_model_training_record["spearmanr"].append(spearmanr)
+       for k,v in train_performances.items():
+           best_model_training_record[k].append(v)
 
        if train_loss < best_loss:
               best_loss = train_loss
@@ -61,12 +60,7 @@ def Evaluate_best_model(submodel):
     best_model, criterion, optimizer =get_model_instance2(submodel,gcn)
     best_model.load_state_dict(torch.load(best_loss_param_path))
 
-    RMSE,pearson,kendalltau,spearmanr= test_model(best_model, test_loader)
-
-    add_config("results","AutoCDRP_rmse",RMSE)
-    add_config("results","AutoCDRP_pearson",pearson)
-    add_config("results", "AutoCDRP_kendalltau", kendalltau)
-    add_config("results", "AutoCDRP_spearmanr", spearmanr)
-
-    return RMSE,pearson,kendalltau,spearmanr
+    performances= test_model(best_model, test_loader)
+    for metric, val in performances.items():
+        add_config("results",f"AutoCDRP_{metric}",val)
          

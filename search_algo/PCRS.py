@@ -17,8 +17,7 @@ from search_space_manager.sample_models import *
 from load_data.load_data import *
 from search_space_manager.search_space import *
 from search_space_manager.map_functions import *
-from GNN_models.graph_regression import *
-# from GNN_models.graph_classification import *
+import importlib
 from settings.config_file import *
 import time
 set_seed()
@@ -206,8 +205,14 @@ def get_best_model(topk_list,option_decoder):
 
    
 def get_train(type_task):
-
-     return GraphRegression,train_gc,test_gc
+    if "regression" in config['dataset']['type_task']:
+     task_model_obj = importlib.import_module(f"GNN_models.graph_regression")
+    elif "classification" in config['dataset']['type_task']:
+         task_model_obj = importlib.import_module(f"GNN_models.graph_classification")
+    gcn = getattr(task_model_obj, "GNN_Model")
+    train_model = getattr(task_model_obj, "train_function")
+    test_model = getattr(task_model_obj, "test_function")
+    return gcn,train_model,test_model
              
 def get_model_instance(submodel,GCN):
     set_seed()

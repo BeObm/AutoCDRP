@@ -19,9 +19,9 @@ from settings.config_file import *
 import torch.nn as nn
 
 
-class GraphRegression(MessagePassing):
-    def __init__(self, param_dict,n_output=2,n_filters=32):
-        super(GraphRegression, self).__init__()
+class GNN_Model(MessagePassing):
+    def __init__(self, param_dict,n_output=1,n_filters=32):
+        super(GNN_Model, self).__init__()
         self.aggr1 = param_dict['aggregation1']
         self.aggr2 = param_dict['aggregation2']
         self.hidden_channels = int(param_dict['hidden_channels'])
@@ -245,20 +245,19 @@ class GraphRegression(MessagePassing):
         xc = self.dropout2(xc)
         out = self.out2(xc)
         out = nn.Sigmoid()(out)
-        # out = F.log_softmax(out, dim=-1)
 
         return out
 
-def train_gc(model, train_loader, criterion, optimizer,epoch=1):
+def train_function(model, train_loader, criterion, optimizer,epoch=1):
     avg_loss = []
     loss_all = 0
     for batch_idx, data in enumerate(train_loader):  # Iterate in batches over the training dataset.
         inputs = data.to(device)
         optimizer.zero_grad()  # Clear gradients.
         out = model(inputs)  # Perform a single forward pass.
-        y=data.y.view(-1,1).squeeze(1)
-
-        train_loss = criterion(out, y)
+        y=data.y.view(-1,1)
+        
+        train_loss = criterion(out, torch.Tensor.float(y))
 
         train_loss.backward()
         loss_all += data.num_graphs * train_loss.item()
@@ -268,15 +267,15 @@ def train_gc(model, train_loader, criterion, optimizer,epoch=1):
     return loss_all / int(config["dataset"]["len_traindata"])
 
 @torch.no_grad()
-def test_gc(model, test_loader):
+def test_function(model, test_loader):
     model.eval()
     y_true, y_pred = [], []
 
     for data in test_loader:
         data = data.to(device)
         with torch.no_grad():
-            out = model(data)
-            pred = out.argmax(dim=1)
+            pred = model(data)
+
         y_true.append(data.y.cpu().numpy())
         y_pred.append(pred.cpu().numpy())
     y_true = np.concatenate(y_true)

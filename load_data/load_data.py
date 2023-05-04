@@ -18,6 +18,15 @@ from collections import defaultdict
 from settings.config_file import *
 set_seed()
 import requests
+
+
+
+def regr_or_class():
+    if "regression" in config['dataset']['type_task']:
+        return  "regression"
+    elif "classification" in config['dataset']['type_task']:
+        return "classification"
+
 class TestbedDataset(InMemoryDataset):
     def __init__(self, root='/tmp', dataset='CCLE',
                  xd=None, xt=None, y=None, transform=None,
@@ -69,7 +78,7 @@ class TestbedDataset(InMemoryDataset):
             print('Converting SMILES to graph: {}/{}'.format(i + 1, data_len))
             smiles = xd[i]
             target = xt[i]
-            labels = int(y[i])
+            labels = y[i]
             print("label::",labels)
             # convert SMILES to molecular representation using rdkit
             c_size, features, edge_index = smile_graph[smiles]
@@ -145,7 +154,7 @@ def write_drug_cid():
             continue
         else:
             cid = c[0].cid
-        print(drug, cid)
+
         drug_id.append(cid)
         row = [drug, str(cid)]
         wr.writerow(row)
@@ -265,7 +274,7 @@ def smile_to_graph(smile):
     return c_size, features, edge_index
 
 def get_pubchem_smiles(drug_id):
-    print(f"Drug : {drug_id}")
+
     pubchem_file= "data/CCLE/CCLE_smiles.csv"
     df =pd.read_csv(pubchem_file)
     for idx,row in df.iterrows():
@@ -309,7 +318,7 @@ def load_drug_smile():
   for smile in drug_smile:
       g = smile_to_graph(smile)
       smile_graph[smile] = g
-  print(f'this is drug dict ; {drug_dict}')
+
 
   if save_smile_list==True:
       save_smile=defaultdict(list)
@@ -395,6 +404,7 @@ def get_cell_drug_response_list():
                     if not pd.isnull(df.loc[idx, col]):
                         ic50 = 1 / (1 + pow(math.exp(float(df.loc[idx, col])), -0.1))
                         temp_data.append((col, idx, ic50))
+
         elif "classification" in config['dataset']['type_task']:
             drug_response_file = config["dataset"]["dataset_root"] + "/cell_drug_binary.csv"
             df = pd.read_csv(drug_response_file, index_col=0)
@@ -414,18 +424,11 @@ def save_mix_drug_cell_matrix():
     cell_dict, cell_feature = save_cell_mut_matrix()
     drug_dict, drug_smile, smile_graph = load_drug_smile()
 
-    for k,v in drug_dict.items():
-        print(f"Drug dict key: {k}---value:{v}")
-        break
-    for k,v in cell_dict.items():
-        print(f"cell dict key: {k}---value:{v}")
-        break
     # smile_graph
-
     bExist = np.zeros((len(drug_dict), len(cell_dict)))
     temp_data = get_cell_drug_response_list()
     # temp_data is a list of tuples (drug, cell, IC50)
-    print(temp_data[0])
+
     xd = []
     xc = []
     y = []
@@ -437,7 +440,7 @@ def save_mix_drug_cell_matrix():
     for data in temp_data:
 
         drug, cell, ic50 = data
-
+        # print(f" this is what in record {drug}  | {cell}  |{ic50}")
         if int(drug) in list(drug_dict.keys()) and cell in list(cell_dict.keys()):
 
             count_id+=1
@@ -478,14 +481,14 @@ def save_mix_drug_cell_matrix():
     print('preparing ', config["dataset"]["dataset_name"] + config["dataset"]["type_experiment"]+ '_train.pt in pytorch format!')
 
     train_data = TestbedDataset(root=config["dataset"]["dataset_root"],
-                                dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_train', xd=xd_train, xt=xc_train,
+                                dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_{regr_or_class()}_train', xd=xd_train, xt=xc_train,
                                 y=y_train,
                                 smile_graph=smile_graph)
     val_data = TestbedDataset(root=config["dataset"]["dataset_root"],
-                              dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_val', xd=xd_val, xt=xc_val, y=y_val,
+                              dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_{regr_or_class()}_val', xd=xd_val, xt=xc_val, y=y_val,
                               smile_graph=smile_graph)
     test_data = TestbedDataset(root=config["dataset"]["dataset_root"],
-                               dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_test', xd=xd_test, xt=xc_test,
+                               dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_{regr_or_class()}_test', xd=xd_test, xt=xc_test,
                                y=y_test,
                                smile_graph=smile_graph)
 
@@ -556,22 +559,20 @@ def save_blind_drug_matrix():
     with open('drug_bind_test', 'wb') as fp:
         pickle.dump(lstDrugTest, fp)
 
-    print(len(y_train), len(y_val), len(y_test))
-
     xd_train, xc_train, y_train = np.asarray(xd_train), np.asarray(xc_train), np.asarray(y_train)
     xd_val, xc_val, y_val = np.asarray(xd_val), np.asarray(xc_val), np.asarray(y_val)
     xd_test, xc_test, y_test = np.asarray(xd_test), np.asarray(xc_test), np.asarray(y_test)
 
     print('preparing ', config["dataset"]["dataset_name"] + config["dataset"]["type_experiment"]+ '_train.pt in pytorch format!')
     train_data = TestbedDataset(root=config["dataset"]["dataset_root"],
-                                dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_train', xd=xd_train, xt=xc_train,
+                                dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_{regr_or_class()}_train', xd=xd_train, xt=xc_train,
                                 y=y_train,
                                 smile_graph=smile_graph)
     val_data = TestbedDataset(root=config["dataset"]["dataset_root"],
-                              dataset= f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_val', xd=xd_val, xt=xc_val, y=y_val,
+                              dataset= f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_{regr_or_class()}_val', xd=xd_val, xt=xc_val, y=y_val,
                               smile_graph=smile_graph)
     test_data = TestbedDataset(root=config["dataset"]["dataset_root"],
-                               dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_test', xd=xd_test, xt=xc_test,
+                               dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_{regr_or_class()}_test', xd=xd_test, xt=xc_test,
                                y=y_test,
                                smile_graph=smile_graph)
 
@@ -653,54 +654,54 @@ def save_blind_cell_matrix():
     with open('cell_bind_test', 'wb') as fp:
         pickle.dump(lstCellTest, fp)
 
-    print(len(y_train), len(y_val), len(y_test))
-
     xd_train, xc_train, y_train = np.asarray(xd_train), np.asarray(xc_train), np.asarray(y_train)
     xd_val, xc_val, y_val = np.asarray(xd_val), np.asarray(xc_val), np.asarray(y_val)
     xd_test, xc_test, y_test = np.asarray(xd_test), np.asarray(xc_test), np.asarray(y_test)
 
     print('preparing ', config["dataset"]["dataset_name"] + '_train.pt in pytorch format!')
     train_data = TestbedDataset(root=config["dataset"]["dataset_root"],
-                                dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_train', xd=xd_train,
+                                dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_{regr_or_class()}_train', xd=xd_train,
                                 xt=xc_train, y=y_train,
                                 smile_graph=smile_graph)
     val_data = TestbedDataset(root=config["dataset"]["dataset_root"],
-                              dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_val', xd=xd_val, xt=xc_val,
+                              dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_{regr_or_class()}_val', xd=xd_val, xt=xc_val,
                               y=y_val,
                               smile_graph=smile_graph)
     test_data = TestbedDataset(root=config["dataset"]["dataset_root"],
-                               dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_test', xd=xd_test, xt=xc_test,
+                               dataset=f'{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_{regr_or_class()}_test', xd=xd_test, xt=xc_test,
                                y=y_test,
                                smile_graph=smile_graph)
 
-def main(Batch_Size,dataset_size=5000):
+def main(Batch_Size,dataset_size="all"):
 
     set_seed()
+   
     print('\nrunning on ', config["dataset"]["dataset_name"])
-    processed_data_file_train =f'{config["dataset"]["dataset_root"]}/processed/{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_train.pt'
-    processed_data_file_val = f'{config["dataset"]["dataset_root"]}/processed/{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_val.pt'
-    processed_data_file_test = f'{config["dataset"]["dataset_root"]}/processed/{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_test.pt'
+    processed_data_file_train =f'{config["dataset"]["dataset_root"]}/processed/{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_{regr_or_class()}_train.pt'
+    processed_data_file_val = f'{config["dataset"]["dataset_root"]}/processed/{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_{regr_or_class()}_val.pt'
+    processed_data_file_test = f'{config["dataset"]["dataset_root"]}/processed/{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_{regr_or_class()}_test.pt'
     if ((not os.path.isfile(processed_data_file_train)) or (not os.path.isfile(processed_data_file_val)) or (
             not os.path.isfile(processed_data_file_test))):
         print('Data set raw Files are missing! Please prepare data set raw and try again')
         exit()
     else:
         train_data = TestbedDataset(root=config["dataset"]["dataset_root"],
-                                    dataset=config["dataset"]["dataset_name"] +"_"+ config["dataset"]["type_experiment"]+'_train')
+                                    dataset=config["dataset"]["dataset_name"] +"_"+ config["dataset"]["type_experiment"]+"_"+ regr_or_class()+ '_train')
         val_data = TestbedDataset(root=config["dataset"]["dataset_root"],
-                                  dataset=config["dataset"]["dataset_name"] +"_"+  config["dataset"]["type_experiment"] + '_val')
+                                  dataset=config["dataset"]["dataset_name"] +"_"+  config["dataset"]["type_experiment"] + "_"+ regr_or_class()+'_val')
         test_data = TestbedDataset(root=config["dataset"]["dataset_root"],
-                                   dataset=config["dataset"]["dataset_name"] +"_"+  config["dataset"]["type_experiment"]+'_test')
+                                   dataset=config["dataset"]["dataset_name"] +"_"+  config["dataset"]["type_experiment"]+"_"+ regr_or_class()+'_test')
         print(f'train dataset size is {len(train_data)}')
         print(f'val dataset size is {len(val_data)}')
         print(f'test dataset size is {len(test_data)}')
-        # print(f' {test_data[0].x}')
+
 
         if dataset_size != "all":
             print(f"original train data size is {len(train_data)} but only {dataset_size} is used")
             train_data = train_data[:dataset_size]
 
         # make data PyTorch mini-batch processing ready
+
         train_loader = DataLoader(train_data, batch_size=Batch_Size, shuffle=True)
         val_loader = DataLoader(val_data, batch_size=Batch_Size, shuffle=False)
         test_loader = DataLoader(test_data, batch_size=Batch_Size, shuffle=False)
