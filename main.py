@@ -35,7 +35,7 @@ if __name__ == "__main__":
     parser.add_argument("--type_task" , help="type_task", default="graph classification")
     parser.add_argument("--search_metric", type=str, default="f1score", help="metric for search guidance",choices=["kendalltau","spearmanr","pcc","auc_pr","mcc","f1score","auc_roc"])
 
-    parser.add_argument("--experiment", type=str, default="drug_blind", help="type of experiment") # "cell_blind", "drug_blind","mix"
+    parser.add_argument("--experiment", type=str, default="cell_blind", help="type of experiment") # "cell_blind", "drug_blind","mix"
     args = parser.parse_args()
 
     create_config_file(args.dataset_name,args.experiment,args.type_task)

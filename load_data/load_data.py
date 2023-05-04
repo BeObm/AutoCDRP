@@ -517,18 +517,18 @@ def save_blind_drug_matrix():
 
     bExist = np.zeros((len(drug_dict), len(cell_dict)))
 
-    temp_data = get_cell_drug_response_list()
+    temp_data = get_cell_drug_response_list()  # temp_data is a list of tuples (drug, cell, IC50)
     random.shuffle(temp_data)
 
     for data in temp_data:
         drug, cell, ic50 = data
-        if drug in drug_dict and cell in cell_dict:
-            if drug in dict_drug_cell:
-                dict_drug_cell[drug].append((cell, ic50))
+        if int(drug) in list(drug_dict.keys()) and cell in list(cell_dict.keys()):
+            if int(drug) in dict_drug_cell:
+                dict_drug_cell[int(drug)].append((cell, ic50))
             else:
-                dict_drug_cell[drug] = [(cell, ic50)]
+                dict_drug_cell[int(drug)] = [(cell, ic50)]
 
-            bExist[drug_dict[drug], cell_dict[cell]] = 1
+            bExist[drug_dict[int(drug)], cell_dict[cell]] = 1
 
     lstDrugTest = []
 
@@ -619,13 +619,13 @@ def save_blind_cell_matrix():
 
     for data in temp_data:
         drug, cell, ic50 = data
-        if drug in drug_dict and cell in cell_dict:
+        if int(drug) in list(drug_dict.keys()) and cell in list(cell_dict.keys()):
             if cell in dict_drug_cell:
-                dict_drug_cell[cell].append((drug, ic50))
+                dict_drug_cell[cell].append((int(drug), ic50))
             else:
-                dict_drug_cell[cell] = [(drug, ic50)]
+                dict_drug_cell[cell] = [(int(drug), ic50)]
 
-            bExist[drug_dict[drug], cell_dict[cell]] = 1
+            bExist[drug_dict[int(drug)], cell_dict[cell]] = 1
 
     lstCellTest = []
 
