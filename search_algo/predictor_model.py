@@ -155,9 +155,10 @@ def testpredictor(model,loader,title):
 def predict_accuracy_using_graph(model,graphLoader):
         set_seed()
         model.eval()
+        search_metric = config["param"]["search_metric"]
         prediction_dict={}
         prediction_dict['model_config']=[]
-        prediction_dict["RMSE"]=[]
+        prediction_dict[search_metric]=[]
         k=int(config["param"]["k"])
         i=0
         
@@ -178,12 +179,12 @@ def predict_accuracy_using_graph(model,graphLoader):
                     temp_list.append((key,values[a][1]))
                 choice.append(temp_list)
             prediction_dict['model_config'].extend(choice)
-            prediction_dict["RMSE"].extend(accuracy)
+            prediction_dict[search_metric].extend(accuracy)
             # print("choice is",choice)
             # print("acc=",round(float(model_acc[1].item()),2),"Acctype=",type(model_acc[1].item()))
        
         df = pd.DataFrame.from_dict(prediction_dict)
-        TopK=df.nsmallest(n=k,columns='RMSE',keep="all")
+        TopK=df.nsmallest(n=k,columns=search_metric,keep="all")
         return TopK
 
 
@@ -199,13 +200,14 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
    predict_sample=int(config["param"]["predict_sample"])
    n_sample= int(config["param"]["n"])
    graphlists = []
-   bestY=9999
+   search_metric = config["param"]["search_metric"]
+   bestY=0
   
    for filename in glob.glob(performance_record+'/*'):
     data=torch.load(filename)
     data.y=data.y.view(-1,1)
     graphlists.append(data)
-    if data.y.item()< bestY :
+    if data.y.item()> bestY :
         bestY = data.y.item()
 
    print("best Y=",bestY)
@@ -331,7 +333,7 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
           TopK_models.append(TopK)
                      
    TopK_model = pd.concat(TopK_models)  
-   TopK_model=TopK_model.nsmallest(k,'RMSE',keep="all")
+   TopK_model=TopK_model.nsmallest(k,search_metric,keep="all")
    TopK_final=TopK_model[:k]
    print(TopK_final)
    prediction_time= round(time.time() - start_predict_time,2)
@@ -344,17 +346,12 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
 def get_prediction_from_table(performance_record, e_search_space):
    set_seed()
    predict_sample=int(config["param"]["predict_sample"])
-   type_sample =config["param"]["type_sampling"]
-   now =config["param"]["run_code"]
-   dataset_name =config["dataset"]["dataset_name"]
+   search_metric = config["param"]["search_metric"]
    k=int(config["param"]["k"])
-   encoding_method = config["param"]["encoding_method"]
-   n_sample =int(config["param"]["N"])
    start_time = time.time()
    lb_make = LabelEncoder()
    performance_record = pd.read_csv(performance_record)
    df=performance_record
-   # df =(df-df.mean())/df.std()
    x=df.iloc[:, :-1]  
    y= df["RMSE"]
   
@@ -508,56 +505,8 @@ def get_prediction_from_table(performance_record, e_search_space):
    print(" End of prediction")
    return TopK_final
 
+
 def evaluate_model_predictor(y_true, y_pred,title="Predictor training"):
-
-   dataset_name =config["dataset"]["dataset_name"]
-   
-   auc = round(roc_auc(y_true, y_pred),10)
-   aucpr = round(auc_pr(y_true, y_pred),10)
-   mcc = round(MCC_score(y_true, y_pred),10)
-   acc = round(Accuracy_score(y_true, y_pred),10)
-
-
-   if title != "Sampling_distribution":
-       if title =="Predictor training test":
-           col="red"
-       elif title=="Predictor validation test":
-           col="dodgerblue"
-       elif title=="Predictor evaluation test":
-           col="limegreen"
-       else:
-           col="red"
-
-
-          # Visualising the Test set results
-
-       # nb=np.array([i for i in range(min1,min1)])
-       plt.figure(figsize=(8, 8))
-
-       a=min(y_pred)
-       b=min(y_true)
-
-       xmin= min(min(y_pred),min(y_true))
-       xmax=max(max(y_pred),max(y_true))
-
-
-       lst =[xmin,xmax]
-       # lst =[a for a in range(0,100)]
-       plt.plot(lst,  lst,  color='black', linewidth=0.6)
-       plt.scatter(y_true, y_pred,  color=col, linewidth=0.8)
-
-
-       # plt.title(f'(r={round(pearson,2)},rho={round(spearmanr,2)},tau={kendalltau})',y=1.02,size=28)#,R2_Score={R2_Score}
-       plt.xlabel(f'True RMSE',fontsize=28)
-       plt.ylabel(f'Predicted RMSE',fontsize=28)#,fontweight = 'bold'
-       # plt.legend()
-       plt.grid()
-       # plt.show()
-       plt.savefig(f'{config["path"]["plots_folder"]}/{title}_{dataset_name}.pdf',bbox_inches="tight",dpi=300)
-   return aucpr,auc,mcc,acc
-
-
-def evaluate_model_predictor0(y_true, y_pred,title="Predictor training"):
 
    dataset_name =config["dataset"]["dataset_name"]
    # print(f"true value = {y_true} and predicted value is {y_pred}")
@@ -607,26 +556,34 @@ def evaluate_model_predictor0(y_true, y_pred,title="Predictor training"):
    return RMSE,pearson,kendalltau,spearmanr
 
 
+def compute_metrics(y_true, y_pred):
+    performance ={}
 
-def roc_auc(y_true, y_pred):
-    auc = roc_auc_score(y_true, y_pred)
-    return auc.astype(float)
+    if "classification" in config["dataset"]["type_task"]:
+        acc = accuracy_score(y_true, y_pred)
+        f1 = f1_score(y_true, y_pred, average='macro')
+        mcc = matthews_corrcoef(y_true, y_pred)
 
-def auc_pr(y_true, y_pred):
+        precision, recall, thresholds = precision_recall_curve(y_true, y_pred)
+        auc_pr = auc(recall, precision)
 
-    precision, recall, _ = precision_recall_curve(y_true, y_pred)
-    auc_pr = auc(recall, precision)
-    return  auc_pr
+        auc_roc = roc_auc_score(y_true, y_pred)
+        performance["acc"]=acc
+        performance["f1score"]=f1
+        performance["mcc"]=mcc
+        performance["auc_pr"]=auc_pr
+        performance["auc_roc"]=auc_roc
 
+    elif "regression" in config["dataset"]["type_task"]:
+        kendalltau = round(stats.kendalltau(y_true, y_pred)[0], 10)
+        spearmanr = round(stats.spearmanr(y_true, y_pred)[0], 10)
+        MSE = mean_squared_error(y_true, y_pred)
+        RMSE = round(math.sqrt(MSE), 10)
+        pcc = round(stats.pearsonr(y_true, y_pred)[0], 10)
 
-def MCC_score(y_true, y_pred):
+        performance["kendalltau"] = kendalltau
+        performance["spearmanr"] = spearmanr
+        performance["RMSE"] = RMSE
+        performance["pcc"] = pcc
 
-    mcc = matthews_corrcoef(y_true, y_pred)
-
-    return mcc
-
-
-def Accuracy_score(y_true, y_pred):
-
-    acc_score = accuracy_score(y_true, y_pred)
-    return acc_score
+    return performance

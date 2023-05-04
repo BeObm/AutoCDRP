@@ -18,6 +18,7 @@ from load_data.load_data import *
 from search_space_manager.search_space import *
 from search_space_manager.map_functions import *
 from GNN_models.graph_regression import *
+# from GNN_models.graph_classification import *
 from settings.config_file import *
 import time
 set_seed()
@@ -28,7 +29,7 @@ def get_performance_distributions(e_search_space):  # get performance distributi
     set_seed()
     torch.manual_seed(num_seed)
     best_loss_param_path =f"{config['path']['performance_distribution_folder']}/best_dist_param.pth"
-
+    search_metric = config["param"]["search_metric"]
     type_task =config["dataset"]["type_task"]
     epochs =int(config["param"]["sample_model_epochs"])
     n_sample =int(config["param"]["N"])
@@ -42,45 +43,41 @@ def get_performance_distributions(e_search_space):  # get performance distributi
     # print("example of model_config", model_list[0])
     predictor_dataset=defaultdict(list)
     graph_list=[]
-    best_AUC_PR = 999
+    best_performance = 0
     print(f' \n Constructing a dataset consisting of {n_sample} models for predictor training. \n')
 
     for no, submodel in tqdm(enumerate(model_list)):
 
-
-            torch.cuda.empty_cache()
-            
             model, criterion, optimizer =get_model_instance(submodel,gcn)
-
-            best_loss = 9999
             
             for epoch in range(epochs):
-               start_time = time.time()
+               # start_time = time.time()
                train_loss = train_model(model,train_loader, criterion, optimizer,epoch+1)
-               epoch_time = time.time() - start_time
+               # epoch_time = time.time() - start_time
                
             start_time = time.time()
-            test_aucpr= round(test_model(model, test_loader)[0],4)
+            performances = test_model(model, val_loader)
+            performance = performances[search_metric]
             test_time = time.time() - start_time
             # print(f"testing one epoch costs {test_time}")
-            if  math.isnan(test_aucpr):
-                test_aucpr= 999
+            if  math.isnan(performance):
+                test_accc= 0
            
-            if test_aucpr <= best_AUC_PR:
-                best_AUC_PR=test_aucpr
+            if performance > best_performance:
+                best_performance=performance
                 best_sample=copy.deepcopy(submodel)
-                best_sample["AUC_PR"]=test_aucpr
-                print(f'-->  AUC_PR = {test_aucpr}  ===++ Actual Best Performance')
-
+                best_sample[search_metric]=performance
+                print(f'{[a[0] for a in submodel.values()]}-->  {search_metric} = {round(performance,4)}  ===++ Actual Best Performance')
+                for k, v in performances.items():
+                    print(f"{k} = {round(v,4)}")
             else :
-                  print(f'--> AUC_PR = {test_aucpr}')
-
+                  print(f'{[a[0] for a in submodel.values()]} -->  {search_metric} = {round(performance,4)} ')
 
             #  transform model configuration into graph data
             if (config["param"]["predictor_dataset_type"])=="graph":
                 # edge_index=get_edge_index(model_list[0])
                 x = get_nodes_features(submodel,e_search_space)
-                y=np.array(test_aucpr)
+                y=np.array(performance)
                 y=torch.tensor(y,dtype=torch.float32).view(-1,1)
                 graphdata=Data(x=x,edge_index =edge_index,y=y,num_nodes=x.shape[0],model_config_choices = deepcopy(submodel))
                 graph_list.append(graphdata)
@@ -92,18 +89,15 @@ def get_performance_distributions(e_search_space):  # get performance distributi
                        predictor_dataset[function].append(option[0])
                     elif config["param"]["encoding_method"] =="embedding":
                        predictor_dataset[function].append(option[2])
-                predictor_dataset["AUC_PR"].append(test_aucpr)
+                predictor_dataset[search_metric].append(performance)
 
                              
                 
     sample_time= round(time.time() - timestart,2)
     add_config("time","distribution_time",sample_time)
-    add_config("results","best_sample_AUC_PR",best_AUC_PR)
-    
+    add_config("results","best_sample_Accuracy",best_performance)
     if (config["param"]["predictor_dataset_type"])=="graph":
-                 
          return  config['path']['predictor_dataset_folder']
-   
     if (config["param"]["predictor_dataset_type"])=="table":
         df =pd.DataFrame.from_dict(predictor_dataset,orient="columns")   
         dataset_file=f'{config["path"]["predictor_dataset_folder"]}/{config["dataset"]["dataset_name"]}-{config["param"]["budget"]} samples.csv'
@@ -116,9 +110,9 @@ def get_best_model(topk_list,option_decoder):
     torch.cuda.empty_cache()
     torch.manual_seed(num_seed)
     best_loss_param_path =f"{config['path']['performance_distribution_folder']}/best_dist_param.pth"
-    
-    pred_AUC_PR=[]
-    real_AUC_PR=[]
+    search_metric = config["param"]["search_metric"]
+    pred_Accuracy=[]
+    real_Accuracy=[]
     encoding_method =config["param"]["encoding_method"]
     type_task =config["dataset"]["type_task"]
     z_topk= int(config["param"]["z_topk"])
@@ -126,28 +120,28 @@ def get_best_model(topk_list,option_decoder):
     n_sample =int(config["param"]["N"])
     type_sampling= config["param"]["type_sampling"]
     start_time = time.time()
-    train_loader, val_loader, test_loader = load_dataset(config["dataset"]["type_experiment"],"not all")
+    train_loader, val_loader, test_loader = load_dataset(config["dataset"]["type_experiment"])
     task_model,train_model,test_model=get_train(type_task)
 
-    min_AUC_PR=999
+    max_Accuracy=0
 
     print("Training tok k models ...")
 
-    Y = 99
+    Y = 0
     for filename in glob.glob(config["path"]["predictor_dataset_folder"] + '/*'):
         data = torch.load(filename)
         data.y = data.y.view(-1, 1)
 
-        if data.y.item() < Y:
+        if data.y.item() > Y:
             Y = data.y.item()
             submodel = deepcopy(data.model_config_choices)
 
         bestmodel = copy.deepcopy(submodel)
 
         for k, v in bestmodel.items():
-            if k != "AUC_PR":
+            if k != search_metric:
                 bestmodel[k] = v[0]
-    print(f"Best sample AUC_PR = {Y}")
+    print(f"Best sample {search_metric} = {Y}")
     for idx,row in tqdm(topk_list.iterrows()):
         dict_model={}   #
         
@@ -157,29 +151,29 @@ def get_best_model(topk_list,option_decoder):
     
         elif (config["param"]["predictor_dataset_type"])=="table":
             for function in topk_list.columns: 
-                if function !="AUC_PR":
+                if function !=search_metric:
                     if config["param"]["encoding_method"] =="one_hot":
                       dict_model[function]=row[function]
                     elif config["param"]["encoding_method"] =="embedding":
                       dict_model[function]=option_decoder[row[function]]
         
         
-        model, criterion, optimizer =get_model_instance2(dict_model,task_model)
+        model, criterion, optimizer = get_model_instance2(dict_model,task_model)
         
-        # train_loader, val_loader, test_loader = load_dataset(config["dataset"]["type_experiment"])
         try:
             model.load_state_dict(best_loss_param_path)
            
         except:
              pass
         
-        AUC_PR_list=[]
+        Accuracy_list=[]
 
         for i in range(z_topk):
-            best_loss=999
+            best_loss=999999999999999999
             
             for epoch in range(epochs):                                            
                loss = train_model(model,train_loader, criterion, optimizer)
+               print(f"this is loss {loss}")
                if loss < best_loss:
                   best_loss = loss
                   torch.save(model.state_dict(),best_loss_param_path )
@@ -187,31 +181,32 @@ def get_best_model(topk_list,option_decoder):
             best_model, criterion, optimizer =get_model_instance2(dict_model,task_model)
             best_model.load_state_dict(torch.load(best_loss_param_path))          
                     
-            val_AUC_PR= test_model(best_model, val_loader)[0]
-            AUC_PR_list.append(val_AUC_PR)
-        val_AUC_PR = round(stat.mean(AUC_PR_list),4)
+            performance= test_model(best_model, val_loader)[search_metric]
+            Accuracy_list.append(performance)
+        val_Accuracy = stat.mean(Accuracy_list)
        
          
-        pred_AUC_PR.append(row["AUC_PR"])
-        real_AUC_PR.append(val_AUC_PR)
+        pred_Accuracy.append(row[search_metric])
+        real_Accuracy.append(val_Accuracy)
                  
-        if min_AUC_PR > val_AUC_PR:
-            min_AUC_PR=val_AUC_PR
+        if max_Accuracy < val_Accuracy:
+            max_Accuracy = val_Accuracy
             bestmodel=copy.deepcopy(dict_model)
-    best_AUC_PR=min_AUC_PR
+    best_Accuracy=max_Accuracy
     best_acc_time = round(time.time() - start_time,2)
     add_config("time","best_acc_time",best_acc_time)
    
-    AUC_PR,pearson_test,kendall_test,spearman_test= evaluate_model_predictor(real_AUC_PR,pred_AUC_PR,title="Predictor evaluation")
-    # add_config("results","R2_Score_test",R2_Score_test)
-    # add_config("results","pearson_test",pearson_test)
-    # add_config("results","kendall_test",kendall_test)
-    # add_config("results","spearman_test",spearman_test)
+    RMSE,pearson,kendalltau,spearmanr= evaluate_model_predictor(real_Accuracy,pred_Accuracy,title="Predictor evaluation")
+    add_config("results","RMSE_Score_test",RMSE)
+    add_config("results","pearson_test",pearson)
+    add_config("results","kendall_test",kendalltau)
+    add_config("results","spearman_test",spearmanr)
      
     return bestmodel       
 
    
 def get_train(type_task):
+
      return GraphRegression,train_gc,test_gc
              
 def get_model_instance(submodel,GCN):

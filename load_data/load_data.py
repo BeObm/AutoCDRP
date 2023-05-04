@@ -76,7 +76,7 @@ class TestbedDataset(InMemoryDataset):
             # make the graph ready for PyTorch Geometrics GCN algorithms:
             GCNData = DATA.Data(x=torch.Tensor(features),
                                 edge_index=torch.LongTensor(edge_index).transpose(1, 0),
-                                y=labels) # torch.FloatTensor([labels]))
+                                y=torch.tensor([labels]))
 
             # require_grad of cell-line for saliency map
             if self.saliency_map == True:
@@ -94,6 +94,7 @@ class TestbedDataset(InMemoryDataset):
         if self.pre_transform is not None:
             data_list = [self.pre_transform(data) for data in data_list]
         print('Graph construction done. Saving to file.')
+
         data, slices = self.collate(data_list)
         # save preprocessed data:
         torch.save((data, slices), self.processed_paths[0])
@@ -365,6 +366,7 @@ def get_cell_drug_response_list():
 
         drug_response_file = config["dataset"]["dataset_root"] + "/cell_drug.csv"
         threshold_df = pd.read_csv(config["dataset"]["dataset_root"] + "/threshold.csv",index_col=0)
+
         df = pd.read_csv(drug_response_file, index_col=0)
         temp_data = []
         for idx, row in df.iterrows():
@@ -375,7 +377,7 @@ def get_cell_drug_response_list():
                         temp_data.append((col, idx, ic50))
                     elif "classification" in config['dataset']['type_task']:
                         ic50 = float(df.loc[idx, col])
-                        threshold=threshold_df.loc[col,"threshold"]
+                        threshold=threshold_df.loc[int(col),"Threshold"]
                         if ic50< threshold:
                              temp_data.append((col, idx, 0))
                         else:
@@ -671,10 +673,8 @@ def save_blind_cell_matrix():
                                y=y_test,
                                smile_graph=smile_graph)
 
-def main(Batch_Size,dataset_size="all"):
-    train_losses = []
-    val_losses = []
-    val_pearsons = []
+def main(Batch_Size,dataset_size=5000):
+
     set_seed()
     print('\nrunning on ', config["dataset"]["dataset_name"])
     processed_data_file_train =f'{config["dataset"]["dataset_root"]}/processed/{config["dataset"]["dataset_name"]}_{config["dataset"]["type_experiment"]}_train.pt'
@@ -697,17 +697,18 @@ def main(Batch_Size,dataset_size="all"):
         # print(f' {test_data[0].x}')
 
         if dataset_size != "all":
-            print(f"original train data size is {len(train_data)} but only 50000 is used")
-            train_data = train_data[:50000]
+            print(f"original train data size is {len(train_data)} but only {dataset_size} is used")
+            train_data = train_data[:dataset_size]
 
         # make data PyTorch mini-batch processing ready
         train_loader = DataLoader(train_data, batch_size=Batch_Size, shuffle=True)
         val_loader = DataLoader(val_data, batch_size=Batch_Size, shuffle=False)
         test_loader = DataLoader(test_data, batch_size=Batch_Size, shuffle=False)
+        add_config("dataset","len_traindata",len(test_loader))
         print(" Running on GPU ? : ", torch.cuda.is_available())
         return train_loader, val_loader, test_loader
 
-def load_dataset(choice="mix",dataset_size="all"):
+def load_dataset(choice="mix"):
     if choice == "mix":
         # save mix test dataset
         save_mix_drug_cell_matrix()
@@ -720,4 +721,4 @@ def load_dataset(choice="mix",dataset_size="all"):
     else:
         print("Invalide option, wrong type of experiment dataset type ")
 
-    return main(Batch_Size,dataset_size)
+    return main(Batch_Size)

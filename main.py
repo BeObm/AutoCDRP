@@ -32,17 +32,20 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_name", help="Dataset name", default="CCLE")
-    parser.add_argument("--dataset_root", help="Dataset root", default="CCLE")
-    parser.add_argument("--experiment", type=str, default="mix", help="type of experiment") # "cell_blind", "drug_blind","mix"
+    parser.add_argument("--type_task" , help="type_task", default="graph classification")
+    parser.add_argument("--search_metric", type=str, default="f1score", help="metric for search guidance",choices=["kendalltau","spearmanr","pcc","auc_pr","mcc","f1score","auc_roc"])
+
+    parser.add_argument("--experiment", type=str, default="drug_blind", help="type of experiment") # "cell_blind", "drug_blind","mix"
     args = parser.parse_args()
 
-    create_config_file(args.dataset_name,args.experiment)
+    create_config_file(args.dataset_name,args.experiment,args.type_task)
 
-    add_config("dataset", "dataset_root", f"{project_root_dir}/data/{config['dataset']['dataset_name']}")
+    # add_config("dataset", "dataset_root", f"{project_root_dir}/data/{config['dataset']['dataset_name']}")
     add_config("dataset", "dataset_name", args.dataset_name)
+    add_config("param", "search_metric", args.search_metric)
     add_config("dataset", "type_experiment", args.experiment)
     manage_budget()
-    create_paths(args.dataset_name,args.experiment)
+    create_paths(args.dataset_name,args.experiment,args.type_task)
 
 
     torch.cuda.empty_cache()
@@ -51,8 +54,8 @@ if __name__ == "__main__":
     total_search_timestart = time.time()
 
     performance_records_path = get_performance_distributions(e_search_space)
-    #
-    # performance_records_path =config["path"]["predictor_dataset_folder"]
+
+    # performance_records_path ="data/Pedictor_dataset_CCLE_MIX_REG"
 
     TopK_final = get_prediction(performance_records_path,e_search_space,config["predictor"]["predictor_type"])
 

@@ -11,8 +11,8 @@ from datetime import datetime
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-num_workers = 4
-num_seed = 12345
+num_workers = 30
+num_seed = 1024
 config = ConfigParser()
 Batch_Size = 1024
 
@@ -35,12 +35,12 @@ def set_seed(seed=num_seed):
 
 project_root_dir = os.path.abspath(os.getcwd())
 
-type_task = "graph classification"
+
 
 
 
 # Second  level of  running configurations
-def create_config_file(dataset_name,run_detail):
+def create_config_file(dataset_name,run_detail,type_task):
     configs_folder = osp.join(project_root_dir, f'results/{type_task}/{dataset_name}/{RunCode}({run_detail})')
     os.makedirs(configs_folder, exist_ok=True)
     config_filename = f"{configs_folder}/ConfigFile_{RunCode}.ini"
@@ -59,15 +59,15 @@ def create_config_file(dataset_name,run_detail):
         'config_filename': config_filename,
         "run_code": RunCode,
         "budget": 50,
-        "k": 5,
+        "k": 25,
         "z_sample": 1,  # Number of time  sampled models are trained before we report their performance
         "z_topk": 1,
         "z_final": 1,
         "nfcode": 56,  # number of digit for each function code when using embedding method
         "noptioncode": 8,
-        "sample_model_epochs": 5,
-        "topk_model_epochs": 1,
-        "best_model_epochs": 1,
+        "sample_model_epochs": 2,
+        "topk_model_epochs": 2,
+        "best_model_epochs": 20,
         "encoding_method": "one_hot",
         "type_sampling": "controlled_stratified_sampling",  # random_sampling, uniform_sampling, controlled_stratified_sampling
         "predictor_dataset_type": "graph",
@@ -75,17 +75,17 @@ def create_config_file(dataset_name,run_detail):
         'type_input_graph': "directed",
         "use_paralell": "yes",
         "learning_type": "supervised",
-        "predict_sample": 500,
-        "batch_sample": 50
+        "predict_sample": 5000,
+        "batch_sample": 10000
     }
 
     config["predictor"] = {
         "predictor_type":"MLP",
-        "dim": 512,
+        "dim": 1024,
         "drop_out": 0.3,
         "lr": 0.0005,
         "wd": 0.0001,
-        "num_epoch": 5,
+        "num_epoch": 100,
         "comit_test": "yes"
     }
 
@@ -107,7 +107,7 @@ def add_config(section_, key_, value_, ):
         config.write(conf)
 
 
-def create_paths(dataset_name,run_detail):
+def create_paths(dataset_name,run_detail,type_task):
     # Create here path for recording model performance distribution
     result_folder = osp.join(project_root_dir, f'results/{type_task}/{dataset_name}/{RunCode}({run_detail})')
     os.makedirs(result_folder, exist_ok=True)

@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import MessagePassing
 import inspect
 from torch.nn import Linear, ReLU, Sequential
-from search_algo.predictor_model import evaluate_model_predictor
+from search_algo.predictor_model import compute_metrics
 from search_algo.utils import rmse
 from settings.config_file import *
 import torch.nn as nn
@@ -244,41 +244,43 @@ class GraphRegression(MessagePassing):
         xc = self.relu(xc)
         xc = self.dropout2(xc)
         out = self.out2(xc)
-        # out = nn.Sigmoid()(out)
-        out = F.log_softmax(out, dim=-1)
+        out = nn.Sigmoid()(out)
+        # out = F.log_softmax(out, dim=-1)
 
         return out
 
 def train_gc(model, train_loader, criterion, optimizer,epoch=1):
     avg_loss = []
-
+    loss_all = 0
     for batch_idx, data in enumerate(train_loader):  # Iterate in batches over the training dataset.
         inputs = data.to(device)
         optimizer.zero_grad()  # Clear gradients.
         out = model(inputs)  # Perform a single forward pass.
-        y=data.y
+        y=data.y.view(-1,1).squeeze(1)
 
         train_loss = criterion(out, y)
-        if torch.cuda.device_count() > 1 and config["param"]["use_paralell"] == "yes":
-            train_loss.mean().backward()
-        else:
-            train_loss.backward()
-        optimizer.step()  # Update parameters based on gradients.
-        avg_loss.append(train_loss.item())
-        # if batch_idx % log_interval == 0:
-        #     print('Train epoch: {} \tLoss: {:.6f}'.format(epoch, train_loss.item()))
-    return sum(avg_loss) / len(avg_loss)
 
+        train_loss.backward()
+        loss_all += data.num_graphs * train_loss.item()
+        optimizer.step()  # Update parameters based on gradients.
+        # avg_loss.append(train_loss.item())
+
+    return loss_all / int(config["dataset"]["len_traindata"])
 
 @torch.no_grad()
-def test_gc(model, test_loader, paralell=True):
+def test_gc(model, test_loader):
     model.eval()
-    ped_list, label_list = [], []
-    for data in test_loader:
-        data= data.to(device)
-        pred = model(data).max(dim=1)[1]
-        ped_list = np.append(ped_list, pred.cpu().detach().numpy())
-        label_list = np.append(label_list, data.y.cpu().detach().numpy())
+    y_true, y_pred = [], []
 
-    aucpr,auc,mcc,acc = evaluate_model_predictor(label_list, ped_list, "Sampling_distribution")
-    return aucpr,auc,mcc,acc
+    for data in test_loader:
+        data = data.to(device)
+        with torch.no_grad():
+            out = model(data)
+            pred = out.argmax(dim=1)
+        y_true.append(data.y.cpu().numpy())
+        y_pred.append(pred.cpu().numpy())
+    y_true = np.concatenate(y_true)
+    y_pred = np.concatenate(y_pred)
+
+    performance = compute_metrics(y_true, y_pred)
+    return performance

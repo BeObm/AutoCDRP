@@ -37,11 +37,11 @@ def create_e_search_space(a=0,b=1):   # a<b
   
     
     # attention= ["GraphConv","GCNConv","GATv2Conv","GATConv","GENConv","ChebConv"]
-    attention= ["GCNConv","GATConv","linear","GENConv","SGConv"]
+    attention= ["GCNConv","GATConv","linear","GENConv","SGConv","TAGConv"]
 
     agregation=['add',"max","mean"] 
     activation=["PReLU","sigmoid","relu"]
-    multi_head= [1,2,4,6,8]
+    multi_head= [1,2,4,6]
     hidden_channels =[64,128,256]
     
     sp={}
@@ -56,7 +56,7 @@ def create_e_search_space(a=0,b=1):   # a<b
     sp['multi_head2']=multi_head
 
     sp['hidden_channels']= hidden_channels
-    sp['dropout']= [0.2, 0.5]
+    sp['dropout']= [0.2, 0.5,0.4]
     sp['lr']= [5e-4,1e-4, 5e-3]
     sp['weight_decay']=[1e-4, 5e-4]
     sp['criterion'] = ["CrossEntropyLoss"]

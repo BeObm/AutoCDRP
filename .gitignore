@@ -9,3 +9,5 @@ data/drug/processed/GDSC_cell_blind_val.pt
 *.pt
 /data/
 *.pt
+*.pt
+*.pt
