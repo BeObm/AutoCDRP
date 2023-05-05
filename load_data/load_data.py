@@ -347,11 +347,12 @@ def save_cell_mut_matrix():
             for i,col in enumerate(list(df.columns)):
                 cell_feature[cell_dict[idx]-1,i]= row[col]
     elif config["dataset"]["dataset_name"]=="GDSC":
+
         mut_file1= mut_file = config["dataset"]["dataset_root"]+"/cell_mutation_dim_1_num_0.csv"
-        mut_file2= mut_file = config["dataset"]["dataset_root"]+"/cell_mutation_dim_1_num_1.csv"
-        df1= pd.read_csv(mut_file1, index_col=0)
-        df2= pd.read_csv(mut_file2, index_col=0)
-        df = pd.concat([df1, df2], axis=1)
+        # mut_file2= mut_file = config["dataset"]["dataset_root"]+"/cell_mutation_dim_1_num_1.csv"
+        df= pd.read_csv(mut_file1, index_col=0)
+        # df2= pd.read_csv(mut_file2, index_col=0)
+        # df = pd.concat([df1, df2], axis=1)
         cell_id = 0
         cell_dict = {}
         for cell in list(df.index):
@@ -451,7 +452,6 @@ def save_mix_drug_cell_matrix():
             lst_drug.append(drug)
             lst_cell.append(cell)
 
-    print(f" Total number of drug is {len(xd)} and total number of cell is {len(xc)}")
     with open('drug_dict', 'wb') as fp:
         pickle.dump(drug_dict, fp)
 

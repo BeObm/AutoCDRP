@@ -58,16 +58,16 @@ def create_config_file(dataset_name,run_detail,type_task):
         "project_dir": project_root_dir,
         'config_filename': config_filename,
         "run_code": RunCode,
-        "budget": 800,
+        "budget": 80,
         "k": 50,
         "z_sample": 1,  # Number of time  sampled models are trained before we report their performance
         "z_topk": 1,
         "z_final": 1,
         "nfcode": 56,  # number of digit for each function code when using embedding method
         "noptioncode": 8,
-        "sample_model_epochs": 400,
-        "topk_model_epochs": 400,
-        "best_model_epochs": 3000,
+        "sample_model_epochs": 2,
+        "topk_model_epochs": 2,
+        "best_model_epochs": 2,
         "encoding_method": "one_hot",
         "type_sampling": "controlled_stratified_sampling",  # random_sampling, uniform_sampling, controlled_stratified_sampling
         "predictor_dataset_type": "graph",
@@ -80,12 +80,12 @@ def create_config_file(dataset_name,run_detail,type_task):
     }
 
     config["predictor"] = {
-        "predictor_type":"MLP",
-        "dim": 1024,
-        "drop_out": 0.3,
-        "lr": 0.0005,
-        "wd": 0.0001,
-        "num_epoch": 700,
+        "predictor_type":"GEN",
+        "dim": 256,
+        "drop_out": 0.2,
+        "lr": 0.001,
+        "wd": 0.001,
+        "num_epoch": 500,
         "comit_test": "yes"
     }
 

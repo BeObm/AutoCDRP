@@ -42,7 +42,10 @@ def get_performance_distributions(e_search_space):  # get performance distributi
     # print("example of model_config", model_list[0])
     predictor_dataset=defaultdict(list)
     graph_list=[]
-    best_performance = 0
+    if search_metric=="RMSE":
+        best_performance = 0
+    else:
+        best_performance = 99999
     print(f' \n Constructing a dataset consisting of {n_sample} models for predictor training. \n')
 
     for no, submodel in tqdm(enumerate(model_list)):
@@ -61,8 +64,9 @@ def get_performance_distributions(e_search_space):  # get performance distributi
             # print(f"testing one epoch costs {test_time}")
             if  math.isnan(performance):
                 test_accc= 0
-           
-            if performance > best_performance:
+
+
+            if (performance < best_performance and  search_metric == "RMSE") or (performance > best_performance and  search_metric != "RMSE"):
                 best_performance=performance
                 best_sample=copy.deepcopy(submodel)
                 best_sample[search_metric]=performance
@@ -77,6 +81,7 @@ def get_performance_distributions(e_search_space):  # get performance distributi
                 # edge_index=get_edge_index(model_list[0])
                 x = get_nodes_features(submodel,e_search_space)
                 y=np.array(performance)
+
                 y=torch.tensor(y,dtype=torch.float32).view(-1,1)
                 graphdata=Data(x=x,edge_index =edge_index,y=y,num_nodes=x.shape[0],model_config_choices = deepcopy(submodel))
                 graph_list.append(graphdata)

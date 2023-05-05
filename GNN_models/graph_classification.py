@@ -78,9 +78,9 @@ class GNN_Model(MessagePassing):
 
         self.pool_xt_3 = nn.MaxPool1d(3)
         if config["dataset"]["dataset_name"] == "CCLE":
-            self.fc1_xt = nn.Linear(7296, self.hidden_channels)
+            self.fc1_xt = nn.Linear(86656, self.hidden_channels)
         elif config["dataset"]["dataset_name"] == "GDSC":
-            self.fc1_xt = nn.Linear(7296, self.hidden_channels)
+            self.fc1_xt = nn.Linear(86656, self.hidden_channels)
         # combined layers
         self.fc1 = nn.Linear(2 * self.hidden_channels, 1024)
         self.fc2 = nn.Linear(1024, 128)
@@ -131,7 +131,6 @@ class GNN_Model(MessagePassing):
         # flatten
         xt = conv_xt.view(-1, conv_xt.shape[1] * conv_xt.shape[2])
         xt = self.fc1_xt(xt)
-
         # concat
         xc = torch.cat((x, xt), 1)
         # add some dense layers
@@ -177,8 +176,8 @@ def test_function(model, test_loader, paralell=True):
             pred = out.argmax(dim=1)
         y_true.append(data.y.cpu().numpy())
         y_pred.append(pred.cpu().numpy())
-    y_true = np.concatenate(y_true)
-    y_pred = np.concatenate(y_pred)
+    y_true = np.concatenate(y_true, axis=None)
+    y_pred = np.concatenate(y_pred, axis=None)
 
     aucpr, auc, mcc, acc = compute_metrics(y_true, y_pred)
     return aucpr, auc, mcc, acc

@@ -187,7 +187,7 @@ class GNN_Model(MessagePassing):
         # combined layers
         self.fc1 = nn.Linear(2 * self.output_conv2, 1024)
         self.fc2 = nn.Linear(1024, 128)
-        self.out2 = nn.Linear(128, n_output)
+        self.out2 = nn.Linear(128, 1)
 
         # activation and regularization
         self.relu = nn.ReLU()
@@ -256,14 +256,13 @@ def train_function(model, train_loader, criterion, optimizer,epoch=1):
         optimizer.zero_grad()  # Clear gradients.
         out = model(inputs)  # Perform a single forward pass.
         y=data.y.view(-1,1)
-        
+
         train_loss = criterion(out, torch.Tensor.float(y))
 
         train_loss.backward()
         loss_all += data.num_graphs * train_loss.item()
         optimizer.step()  # Update parameters based on gradients.
         # avg_loss.append(train_loss.item())
-
     return loss_all / int(config["dataset"]["len_traindata"])
 
 @torch.no_grad()
@@ -276,10 +275,10 @@ def test_function(model, test_loader):
         with torch.no_grad():
             pred = model(data)
 
-        y_true.append(data.y.cpu().numpy())
-        y_pred.append(pred.cpu().numpy())
-    y_true = np.concatenate(y_true)
-    y_pred = np.concatenate(y_pred)
+        y_true.append(torch.Tensor.float(data.y.view(-1,1)).cpu().numpy().tolist())
+        y_pred.append(pred.cpu().numpy().tolist())
+    y_true = np.concatenate(y_true,axis=None)
+    y_pred = np.concatenate(y_pred,axis=None)
 
     performance = compute_metrics(y_true, y_pred)
     return performance

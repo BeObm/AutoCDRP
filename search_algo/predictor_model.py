@@ -8,6 +8,7 @@ Created on Sat Jun  5 10:44:23 2021
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error,r2_score
 import time
+import matplotlib
 from tqdm import tqdm
 import torch.nn as nn
 import importlib
@@ -15,7 +16,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import precision_recall_curve, roc_auc_score, average_precision_score, matthews_corrcoef
 from sklearn.metrics import precision_score,auc, recall_score, balanced_accuracy_score, accuracy_score,f1_score
 import warnings
-
+from scipy.stats import kendalltau, spearmanr, pearsonr
 import math
 from scipy import stats
 from search_algo.utils import *
@@ -45,7 +46,6 @@ from search_space_manager.map_functions import LinearConv
 from settings.config_file import *
 set_seed()
 
-
 def get_prediction(performance_records,e_search_space,conv):
     if (config["param"]["predictor_dataset_type"])=="graph":
        TopK_final= get_prediction_from_graph(performance_records,e_search_space,conv)
@@ -56,17 +56,17 @@ def get_prediction(performance_records,e_search_space,conv):
 
 
 class Predictor(torch.nn.Module):
-    def __init__(self, in_channels, dim, out_channels,drop_out,conv="GIN"):
+    def __init__(self, in_channels, dim, out_channels,drop_out,conv="GAT"):
         super(Predictor, self).__init__()
-        self.in_channels=in_channels
+        self.in_channels=48
         self.dim=dim
         self.out_channel=out_channels
         self.conv1,self.conv2 = self.get_conv(conv)
         # self.normalize = InstanceNorm(dim)
         self.graphnorm=GraphNorm(dim)
-        self.linear=Linear(dim,1024)
-        self.linear2=Linear(1024,out_channels)
-        self.relu = nn.ReLU()
+        self.linear=Linear(dim,512)
+        self.linear2=Linear(512,out_channels)
+        self.relu = nn.PReLU()
         # self.dropout = nn.Dropout(drop_out)
 
         self.drop_out = drop_out
@@ -93,45 +93,43 @@ class Predictor(torch.nn.Module):
 
         x = self.conv1(x, edge_index)
         x = self.relu(x)
-        # x= self.graphnorm(x)
-
+        x= self.graphnorm(x)
+        x = F.dropout(x, p=self.drop_out, training=True)
         x = self.conv2(x, edge_index)
         x = self.relu(x)
-        # x = self.graphnorm(x)
+        x = self.graphnorm(x)
+        x = F.dropout(x, p=self.drop_out, training=True)
 
         x = global_add_pool(x, batch)
 
         x = self.linear(x)
         x = self.relu(x)
-        # x = self.dropout(x)
-        x = F.dropout(x,p=self.drop_out, training=True)
+
         x = self.linear2(x)
         # x = self.relu(x)
-        # x = nn.Sigmoid()(x)
+        x = nn.Sigmoid()(x)
         return x
 
 
 def trainpredictor(predictor_model, train_loader,optimizer):
-    set_seed()
+
     predictor_model.train()
     avg_loss = []
-    # crit=torch.nn.MSELoss(reduction='sum')
-    loss_fct=torch.nn.SmoothL1Loss(reduction='mean',beta=1)
-    total_loss = total_examples = 0
+    # loss_fct=torch.nn.MSELoss(reduction='sum')
+    loss_fct=torch.nn.SmoothL1Loss(reduction='mean',beta=1.0)
+    loss_all = 0
     for data in train_loader:
         data = data.to(device)
         optimizer.zero_grad()
         output = predictor_model(data)
-        loss = loss_fct(output, data.y.view(-1, 1).float().to(device))
-        if torch.cuda.device_count() > 1 and config["param"]["use_paralell"]=="yes":
-             loss.mean().backward()
-        else:
-            loss.backward()
+        data.y= data.y.view(-1, 1).float().to(device)
+        loss = loss_fct(output,data.y )
+        loss.backward()
+        loss_all += data.num_graphs * loss.item()
         optimizer.step()
-        avg_loss.append(loss.item())
 
-    print("loss =",sum(avg_loss)/len(avg_loss))
-    return sum(avg_loss)/len(avg_loss)
+    print("loss =",loss_all /len(train_loader.dataset))
+    return loss_all / len(train_loader.dataset)
 
 
 @torch.no_grad()
@@ -527,7 +525,6 @@ def evaluate_model_predictor(y_true, y_pred,title="Predictor training"):
        else:
            col="red"
 
-
           # Visualising the Test set results
 
        # nb=np.array([i for i in range(min1,min1)])
@@ -558,7 +555,7 @@ def evaluate_model_predictor(y_true, y_pred,title="Predictor training"):
 
 def compute_metrics(y_true, y_pred):
     performance ={}
-
+   
     if "classification" in config["dataset"]["type_task"]:
         acc = accuracy_score(y_true, y_pred)
         f1 = f1_score(y_true, y_pred, average='macro')
@@ -575,14 +572,13 @@ def compute_metrics(y_true, y_pred):
         performance["auc_roc"]=auc_roc
 
     elif "regression" in config["dataset"]["type_task"]:
-        kendalltau = round(stats.kendalltau(y_true, y_pred)[0], 10)
-        spearmanr = round(stats.spearmanr(y_true, y_pred)[0], 10)
+        kendall,_= kendalltau(y_true, y_pred)
+        spearman,_ = spearmanr(y_true, y_pred)
         MSE = mean_squared_error(y_true, y_pred)
         RMSE = round(math.sqrt(MSE), 10)
-        pcc = round(stats.pearsonr(y_true, y_pred)[0], 10)
-
-        performance["kendalltau"] = kendalltau
-        performance["spearmanr"] = spearmanr
+        pcc,_ = pearsonr(y_true, y_pred)
+        performance["kendalltau"] = kendall
+        performance["spearmanr"] = spearman
         performance["RMSE"] = RMSE
         performance["pcc"] = pcc
 
