@@ -43,9 +43,9 @@ def get_performance_distributions(e_search_space):  # get performance distributi
     predictor_dataset=defaultdict(list)
     graph_list=[]
     if search_metric=="RMSE":
-        best_performance = 0
-    else:
         best_performance = 99999
+    else:
+        best_performance = 0
     print(f' \n Constructing a dataset consisting of {n_sample} models for predictor training. \n')
 
     for no, submodel in tqdm(enumerate(model_list)):

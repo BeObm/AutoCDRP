@@ -163,11 +163,11 @@ class GNN_Model(MessagePassing):
 
         self.n_output = n_output
 
-        self.mlp_x = Sequential(Linear(self.output_conv2, 512), ReLU(),
-                              Linear(512, self.output_conv2))
+        self.mlp_x = Sequential(Linear(self.output_conv2, 1024), ReLU(),
+                              Linear(1024, self.output_conv2))
 
-        self.mlp_target = Sequential(Linear(735, 512), ReLU(),
-                              Linear(512, self.output_conv2))
+        self.mlp_target = Sequential(Linear(735, 1024), ReLU(),
+                              Linear(1024, self.output_conv2))
 
         self.out1 = Sequential(Linear(self.output_conv2*2, +self.hidden_channels), ReLU(),
                               Linear(+self.hidden_channels, 1))
@@ -199,13 +199,13 @@ class GNN_Model(MessagePassing):
         x, edge_index, batch = data.x, data.edge_index, data.batch
         x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.conv1(x, edge_index)
-        x = self.batchnorm1(x)
+        # x = self.batchnorm1(x)
         x = self.activation1(x)
         # x=self.dropout2(x)
         x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.conv2(x, edge_index)
 
-        x = self.batchnorm2(x)
+        # x = self.batchnorm2(x)
         x = self.activation2(x)
         # x = self.dropout2(x)
 
@@ -256,9 +256,7 @@ def train_function(model, train_loader, criterion, optimizer,epoch=1):
         optimizer.zero_grad()  # Clear gradients.
         out = model(inputs)  # Perform a single forward pass.
         y=data.y.view(-1,1)
-
         train_loss = criterion(out, torch.Tensor.float(y))
-
         train_loss.backward()
         loss_all += data.num_graphs * train_loss.item()
         optimizer.step()  # Update parameters based on gradients.

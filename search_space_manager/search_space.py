@@ -37,7 +37,7 @@ def create_e_search_space(a=0,b=1):   # a<b
   
     
     # attention= ["GraphConv","GCNConv","GATv2Conv","GATConv","GENConv","ChebConv"]
-    attention= ["GCNConv","GATConv","linear","GENConv","SGConv","TAGConv"]
+    attention= ["GCNConv","GATConv","linear","GENConv","SGConv"]
 
     agregation=['add',"max","mean"] 
     activation=["PReLU","sigmoid","relu"]
@@ -57,8 +57,8 @@ def create_e_search_space(a=0,b=1):   # a<b
 
     sp['hidden_channels']= hidden_channels
     sp['dropout']= [0.2, 0.5,0.4]
-    sp['lr']= [5e-4,1e-4, 5e-3]
-    sp['weight_decay']=[1e-4, 5e-4]
+    sp['lr']= [1e-4,1e-2, 1e-3]
+    sp['weight_decay']=[0,1e-4, 1e-3, 1e-2]
     if "regression" in config['dataset']['type_task']:
         sp['criterion'] = ["MSELoss"]
     elif "classification" in config['dataset']['type_task']:
@@ -114,17 +114,11 @@ def create_e_search_space0(a=0, b=1):  # a<b
     nfcode = int(config["param"]["nfcode"])
     noptioncode = int(config["param"]["noptioncode"])
 
-    # attention= ["GATConv","GCNConv",'GENConv', 'GraphUNet',"HypergraphConv","GraphConv","GATConv","GCNConv","TransformerConv",
-    #           'SuperGATConv',"SAGEConv",
-    #            "ChebConv","ResGatedGraphConv","MFConv","SGConv","ARMAConv","TAGConv","GATv2Conv",
-    #           "FeaStConv","PDNConv","EGConv","ClusterGCNConv","LEConv"]
-
-    # attention= ["GraphConv","GCNConv","GATv2Conv","GATConv","GENConv","ChebConv"]
-    attention = ["GCNConv", "GATConv", "linear", "GENConv", "SGConv", "TAGConv"]
+    attention = ["GCNConv", "GATConv", "linear", "GENConv", "SGConv"]
 
     agregation = ['add', "max", "mean"]
     activation = ["PReLU", "sigmoid", "relu"]
-    multi_head = [1, 2, 4, 6]
+    multi_head = [1, 2, 4]
     hidden_channels = [64, 128, 256]
 
     sp = {}
@@ -139,9 +133,9 @@ def create_e_search_space0(a=0, b=1):  # a<b
     sp['multi_head2'] = multi_head
 
     sp['hidden_channels'] = hidden_channels
-    sp['dropout'] = [0.2, 0.5, 0.4]
+    sp['dropout'] = [0.2, 0.5, 0.4,0.6]
     sp['lr'] = [1e-2, 1e-3, 5e-4, 1e-4, 5e-3]
-    sp['weight_decay'] = [1e-4, 5e-4, 5e-3]
+    sp['weight_decay'] = [0,1e-4, 1e-3, 1e-2]
     if "regression" in config['dataset']['type_task']:
         sp['criterion'] = ["MSELoss", "smooth_l1_loss"]
     elif "classification" in config['dataset']['type_task']:

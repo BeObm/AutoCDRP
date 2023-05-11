@@ -78,9 +78,9 @@ class GNN_Model(MessagePassing):
 
         self.pool_xt_3 = nn.MaxPool1d(3)
         if config["dataset"]["dataset_name"] == "CCLE":
-            self.fc1_xt = nn.Linear(86656, self.hidden_channels)
+            self.fc1_xt = nn.Linear(7296, self.hidden_channels)
         elif config["dataset"]["dataset_name"] == "GDSC":
-            self.fc1_xt = nn.Linear(86656, self.hidden_channels)
+            self.fc1_xt = nn.Linear(7296, self.hidden_channels)
         # combined layers
         self.fc1 = nn.Linear(2 * self.hidden_channels, 1024)
         self.fc2 = nn.Linear(1024, 128)
@@ -142,7 +142,7 @@ class GNN_Model(MessagePassing):
         xc = self.dropout2(xc)
         out = self.out2(xc)
         # out = nn.Sigmoid()(out)
-        out = F.log_softmax(out, dim=1)
+        # out = F.log_softmax(out, dim=1)
 
         return out
 
@@ -154,7 +154,7 @@ def train_function(model, train_loader, criterion, optimizer, epoch=1):
         data = data.to(device)
         optimizer.zero_grad()  # Clear gradients.
         out = model(data)  # Perform a single forward pass.
-        # y = data.y.view(-1, 1).squeeze(1)
+        data.y = data.y.type(torch.LongTensor).to(device)
         loss = criterion(out, data.y)
         loss.backward()
         loss_all += data.num_graphs * loss.item()
@@ -173,11 +173,13 @@ def test_function(model, test_loader, paralell=True):
         data = data.to(device)
         with torch.no_grad():
             out = model(data)
-            pred = out.argmax(dim=1)
+            print([a for a in out])
+            pred = out.argmax(dim=-1)
+        data.y = data.y.type(torch.LongTensor).to(device)
         y_true.append(data.y.cpu().numpy())
         y_pred.append(pred.cpu().numpy())
     y_true = np.concatenate(y_true, axis=None)
     y_pred = np.concatenate(y_pred, axis=None)
 
-    aucpr, auc, mcc, acc = compute_metrics(y_true, y_pred)
-    return aucpr, auc, mcc, acc
+    performance = compute_metrics(y_true, y_pred)
+    return performance
