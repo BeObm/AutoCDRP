@@ -108,5 +108,5 @@ class GINConvNet(torch.nn.Module):
         xc = self.relu(xc)
         xc = self.dropout(xc)
         out = self.out(xc)
-        out = nn.Sigmoid()(out)
+        # out = nn.Sigmoid()(out)
         return out, x

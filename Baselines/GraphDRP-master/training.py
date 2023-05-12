@@ -10,7 +10,9 @@ from models.gcn import GCNNet
 from models.ginconv import GINConvNet
 from models.mgataf import MGATAFNet
 from models.gat_gcn_transformer import GAT_GCN_Transformer
+from models.supergat import SuperGATNet
 from utils import *
+from torch.optim.lr_scheduler import StepLR
 import datetime
 import argparse
 
@@ -19,7 +21,7 @@ import argparse
 def train(model, device, train_loader, optimizer, epoch, log_interval):
     print('Training on {} samples...'.format(len(train_loader.dataset)))
     model.train()
-    loss_fn = nn.MSELoss()
+    loss_fn = nn.SmoothL1Loss(reduction='mean', beta=1.0)
     avg_loss = []
     for batch_idx, data in enumerate(train_loader):
         data = data.to(device)
@@ -91,9 +93,10 @@ def main(modeling, train_loader, val_loader, test_loader, lr, num_epoch, log_int
     device = torch.device(cuda_name if torch.cuda.is_available() else "cpu")
     print(device)
     model = modeling().to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr,weight_decay=0.0005)
+    scheduler = StepLR(optimizer, step_size=20, gamma=0.1)
     best_mse = 1000
-    best_pearson = 1
+    best_pearson = 0
     best_epoch = -1
     model_file_name = f"Baselines/GraphDRP-master/Baseline_Logs/{dataset}/{experiment}/{model_st}/model.model"
     result_file_name = f"Baselines/GraphDRP-master/Baseline_Logs/{dataset}/{experiment}/{model_st}/result.csv"
@@ -101,6 +104,7 @@ def main(modeling, train_loader, val_loader, test_loader, lr, num_epoch, log_int
     pearson_fig_name = f"Baselines/GraphDRP-master/Baseline_Logs/{dataset}/{experiment}/{model_st}/pearson"
     for epoch in range(num_epoch):
         train_loss = train(model, device, train_loader, optimizer, epoch + 1, log_interval)
+        scheduler.step()
         G, P = predicting(model, device, val_loader)
         ret = [rmse(G, P), mse(G, P), pearson(G, P), spearman(G, P)]
 
@@ -141,15 +145,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='train model')
     parser.add_argument('--model', type=int, required=False, default=0,
                         help='0: GINConvNet, 1: GATNet, 2: GAT_GCN, 3: GCNNet')
-    parser.add_argument('--train_batch', type=int, required=False, default=1024, help='Batch size training set')
-    parser.add_argument('--val_batch', type=int, required=False, default=1024, help='Batch size validation set')
-    parser.add_argument('--test_batch', type=int, required=False, default=1024, help='Batch size test set')
-    parser.add_argument('--lr', type=float, required=False, default=1e-4, help='Learning rate')
+    parser.add_argument('--train_batch', type=int, required=False, default=512, help='Batch size training set')
+    parser.add_argument('--val_batch', type=int, required=False, default=512, help='Batch size validation set')
+    parser.add_argument('--test_batch', type=int, required=False, default=512, help='Batch size test set')
+    parser.add_argument('--lr', type=float, required=False, default=1e-5, help='Learning rate')
     parser.add_argument('--num_epoch', type=int, required=False, default=300, help='Number of epoch')
     parser.add_argument('--log_interval', type=int, required=False, default=20, help='Log interval')
     parser.add_argument('--cuda_name', type=str, required=False, default="cuda:0", help='Cuda')
     parser.add_argument('--dataset', type=str, required=False, default="CCLE", help='dataset name')
-    parser.add_argument('--experiment', type=str, required=False, default="mix", help='type of experiment',
+    parser.add_argument('--experiment', type=str, required=False, default="cell_blind", help='type of experiment',
                         choices=["mix", "drug_blind", "cell_blind"])
 
     args = parser.parse_args()
@@ -162,7 +166,7 @@ if __name__ == "__main__":
     cuda_name = args.cuda_name
     train_loader, val_loader, test_loader = load_dataset(train_batch, val_batch, test_batch, lr, num_epoch,
                                                          args.dataset, args.experiment)
-    modelings = [GINConvNet, GATNet, GAT_GCN, GCNNet, MGATAFNet, GAT_GCN_Transformer]
+    modelings = [ GCNNet, GINConvNet, GATNet, GAT_GCN,SuperGATNet,MGATAFNet, GAT_GCN_Transformer]
 
     for modeling in [modelings[args.model]]:
         main(modeling, train_loader, val_loader, test_loader, lr, num_epoch, log_interval, cuda_name, args.dataset,

@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import mean_squared_error, r2_score
 import time
+from torch.optim.lr_scheduler import StepLR,ReduceLROnPlateau
+
 import matplotlib
 from tqdm import tqdm
 import torch.nn as nn
@@ -70,7 +72,7 @@ class Predictor(torch.nn.Module):
         self.linear = Linear(dim, 1024)
         self.linear2 = Linear(1024, out_channels)
         self.relu = nn.ReLU()
-
+        # self.dropout0 = nn.Dropout(0.5)
         self.drop_out = drop_out
 
     def get_conv(self, conv):
@@ -93,7 +95,7 @@ class Predictor(torch.nn.Module):
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
 
-        # x = F.dropout(x, p=0.2, training=self.training)
+        x = F.dropout(x, p=0.2, training=self.training)
         x = self.conv1(x, edge_index)
         x = self.relu(x)
         # x= self.graphnorm(x)
@@ -112,9 +114,8 @@ class Predictor(torch.nn.Module):
         x = self.relu(x)
 
         x = self.linear2(x)
-        x = nn.Sigmoid()(x)
+        # x = nn.Sigmoid()(x)
         return x
-
 
 def trainpredictor(predictor_model, train_loader, optimizer,epoch):
     predictor_model.train()
@@ -140,14 +141,13 @@ def testpredictor(model, test_loader, title):
     y_true = []
     y_pred = []
     for data in test_loader:
+        data=data.to(device)
         with torch.no_grad():
-            output = model(data)
-        y_pred.append(output)
-        y_true.append(data.y)
-    y_pred = torch.cat(y_pred, dim=0)
-    y_true = torch.cat(y_true, dim=0)
-    mse = F.mse_loss(y_pred, y_true)
-    print(f"test RMSE is {math.sqrt(mse)}")
+            pred = model(data)
+        y_true.append(torch.Tensor.float(data.y.view(-1, 1)).cpu().numpy().tolist())
+        y_pred.append(pred.cpu().numpy().tolist())
+    y_true = np.concatenate(y_true, axis=None)
+    y_pred = np.concatenate(y_pred, axis=None)
     predictor_R2_Score, predictor_mse, predictor_mae, predictor_corr = evaluate_model_predictor(y_true,
                                                                                                 y_pred,
                                                                                                 title)
@@ -244,14 +244,20 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
     train_loader = DataLoader(train_dataset, batch_size=Batch_Size, shuffle=False)
     val_loader = DataLoader(val_dataset, batch_size=Batch_Size, shuffle=False)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr,weight_decay=wd)
+    # scheduler = StepLR(optimizer, step_size=10, gamma=0.05)
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.05, patience=5, verbose=True)
     best_loss = 99999999
     c=0
     print("starting training the predictor ...")
 
     for e,epoch in tqdm(enumerate(range(num_epoch))):
         loss = trainpredictor(model, train_loader, optimizer,e)
+
         if e % 5 ==0:
-            print(f"Epoch {e}: Loss = {loss}")
+            RMSE_train, pearson_tr, kendall_tr, spearman_tr = testpredictor(model,
+                                                                            train_loader,
+                                                                            title="Predictor training test")
+            print(f" ❤️Epoch {e}: Loss = {loss} | RMSE= {RMSE_train} | Pearson Cor. = {pearson_tr}")
         if loss < best_loss:
             best_loss = loss
             torch.save(model.state_dict(), "predictor.pth")
@@ -259,12 +265,11 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
             c += 1
             if c == 100:
                 break
-
+        scheduler.step(loss)
 
     RMSE_train, pearson_tr, kendall_tr, spearman_tr = testpredictor(model,
                                                                     train_loader,
                                                                     title="Predictor training test")
-
     add_config("results", "RMSE_train", RMSE_train)
     add_config("results", "pearson_train", pearson_tr)
     add_config("results", "kendall_train", kendall_tr)

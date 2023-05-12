@@ -14,7 +14,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 num_workers = 30
 num_seed = 1024
 config = ConfigParser()
-Batch_Size = 64
+Batch_Size = 1024
 
 RunCode = dates = datetime.now().strftime("%d-%m_%Hh%M")
 
@@ -63,9 +63,9 @@ def create_config_file(dataset_name,run_detail,type_task):
         "z_final": 1,
         "nfcode": 56,  # number of digit for each function code when using embedding method
         "noptioncode": 8,
-        "sample_model_epochs": 3,
-        "topk_model_epochs": 3,
-        "best_model_epochs": 3,
+        "sample_model_epochs": 300,
+        "topk_model_epochs": 300,
+        "best_model_epochs": 300,
         "encoding_method": "one_hot",
         "type_sampling": "controlled_stratified_sampling",  # random_sampling, uniform_sampling, controlled_stratified_sampling
         "predictor_dataset_type": "graph",
@@ -73,7 +73,7 @@ def create_config_file(dataset_name,run_detail,type_task):
         'type_input_graph': "directed",
         "use_paralell": "yes",
         "learning_type": "supervised",
-        "predict_sample": 500,
+        "predict_sample": 500000,
         "batch_sample": 10000
     }
 
@@ -81,9 +81,9 @@ def create_config_file(dataset_name,run_detail,type_task):
         "predictor_type":"GEN",
         "dim": 1024,
         "drop_out": 0.3,
-        "lr": 0.0001,
+        "lr": 0.001,
         "wd": 5e-4,
-        "num_epoch": 50,
+        "num_epoch": 3000,
         "comit_test": "yes"
     }
 
