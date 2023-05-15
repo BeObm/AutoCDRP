@@ -505,8 +505,7 @@ def get_prediction_from_table(performance_record, e_search_space):
 
 def evaluate_model_predictor(y_true0, y_pred0, title="Predictor training"):
     dataset_name = config["dataset"]["dataset_name"]
-    # print("True value:", [a for a in y_true0])
-    # print("predict value:", [b for b in y_pred0])
+
     lst = []
     y_pred = []
     y_true = []
