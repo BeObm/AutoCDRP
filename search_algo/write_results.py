@@ -6,7 +6,7 @@ Created on Thu Dec  2 17:19:59 2021
 """
 from settings.config_file import *
 
-def write_results(best_model):
+def write_results(best_model,performances):
     
        k=int(config["param"]["k"])
     
@@ -48,10 +48,9 @@ def write_results(best_model):
             results.write(f'predictor train spearman_corr= {float(config["results"]["spearman_train"])} \n')
             results.write(f'predictor val spearman_corr= {float(config["results"]["spearman_val"])} \n\n')
             # results.write(f'predictor test spearman_corr= {float(config["results"]["spearman_test"])} \n\n')
-            results.write(f'AutoCDRP_rmse= {float(config["results"]["AutoCDRP_rmse"])} \n')
-            results.write(f'AutoCDRP_pearson= {float(config["results"]["AutoCDRP_pearson"])} \n')
-            results.write(f'AutoCDRP_kendalltau= {float(config["results"]["AutoCDRP_kendalltau"])} \n')
-            results.write(f'AutoCDRP_spearmanr= {float(config["results"]["AutoCDRP_spearmanr"])} \n')
+            for metric, val in performances.items():
+                 results.write(f'AutoCDRP_{metric}"= {val} \n')
+
 
             results.write("-------------------------------------------------\n\n ")
            
@@ -90,11 +89,8 @@ def write_results(best_model):
        print(f'predictor train spearman= {float(config["results"]["spearman_train"])} \n')
        print(f'predictor val spearman= {float(config["results"]["spearman_val"])} \n')
        # print(f'predictor test spearman= {float(config["results"]["spearman_test"])} \n\n')
-
-       print(f'AutoCDRP_rmse= {float(config["results"]["AutoCDRP_rmse"])} \n')
-       print(f'AutoCDRP_pearson= {float(config["results"]["AutoCDRP_pearson"])} \n')
-       print(f'AutoCDRP_kendalltau= {float(config["results"]["AutoCDRP_kendalltau"])} \n')
-       print(f'AutoCDRP_spearmanr= {float(config["results"]["AutoCDRP_spearmanr"])} \n')
+       for metric, val in performances.items():
+           print(f'AutoCDRP_{metric}"= {val} \n')
        print("-------------------------------------------------\n\n ")
            
 

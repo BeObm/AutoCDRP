@@ -9,13 +9,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import mean_squared_error, r2_score
 import time
-from torch.optim.lr_scheduler import StepLR,ReduceLROnPlateau
-
 import matplotlib
 from tqdm import tqdm
 import torch.nn as nn
-import importlib
-import matplotlib.pyplot as plt
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from sklearn.metrics import precision_recall_curve, roc_auc_score, average_precision_score, matthews_corrcoef
 from sklearn.metrics import precision_score, auc, recall_score, balanced_accuracy_score, accuracy_score, f1_score
 import warnings
@@ -65,15 +62,16 @@ class Predictor(torch.nn.Module):
         super(Predictor, self).__init__()
         self.in_channels = in_channels
         self.dim = dim
+        self.drop_out = drop_out
         self.out_channel = out_channels
-        self.conv1, self.conv2 = self.get_conv(conv)
+        self.conv1, self.conv2,self.conv3 = self.get_conv(conv)
         # self.normalize = InstanceNorm(dim)
         self.graphnorm = GraphNorm(dim)
         self.linear = Linear(dim, 1024)
         self.linear2 = Linear(1024, out_channels)
         self.relu = nn.ReLU()
-        # self.dropout0 = nn.Dropout(0.5)
-        self.drop_out = drop_out
+
+
 
     def get_conv(self, conv):
         if conv == "GIN":
@@ -83,19 +81,18 @@ class Predictor(torch.nn.Module):
                              Linear(self.dim, self.dim))
             return GINConv(nn1), GINConv(nn2)
         elif conv == "GCN":
-            return GCNConv(self.in_channels, self.dim), GCNConv(self.dim, self.dim)
+            return GCNConv(self.in_channels, self.dim), GCNConv(self.dim, self.dim),GCNConv(self.dim, self.dim)
         elif conv == "GAT":
-            return GATConv(self.in_channels, self.dim, head=20, dropout=self.drop_out), GATConv(self.dim * 20, self.dim,
+            return GATConv(self.in_channels, self.dim, heads=20, dropout=self.drop_out), GATConv(self.dim * 20, self.dim,
+                                                                                                dropout=self.drop_out,heads=10),GATConv(self.dim * 10, self.dim,
                                                                                                 dropout=self.drop_out)
         elif conv == "GEN":
-            return GENConv(self.in_channels, self.dim), GENConv(self.dim, self.dim)
+            return GENConv(self.in_channels, self.dim), GENConv(self.dim, self.dim),GENConv(self.dim, self.dim)
         elif conv == "MLP":
-            return LinearConv(self.in_channels, self.dim), LinearConv(self.dim, self.dim)
+            return LinearConv(self.in_channels, self.dim), LinearConv(self.dim, self.dim),LinearConv(self.dim, self.dim)
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
-
-        x = F.dropout(x, p=0.2, training=self.training)
         x = self.conv1(x, edge_index)
         x = self.relu(x)
         # x= self.graphnorm(x)
@@ -104,7 +101,7 @@ class Predictor(torch.nn.Module):
         x = self.relu(x)
         # x = self.graphnorm(x)
         x = F.dropout(x, p=self.drop_out, training=True)
-        x = self.conv2(x, edge_index)
+        x = self.conv3(x, edge_index)
         x = self.relu(x)
         # x = self.graphnorm(x)
         # x = F.dropout(x, p=self.drop_out, training=True)
@@ -116,6 +113,7 @@ class Predictor(torch.nn.Module):
         x = self.linear2(x)
         # x = nn.Sigmoid()(x)
         return x
+
 
 def trainpredictor(predictor_model, train_loader, optimizer,epoch):
     predictor_model.train()
@@ -141,13 +139,14 @@ def testpredictor(model, test_loader, title):
     y_true = []
     y_pred = []
     for data in test_loader:
-        data=data.to(device)
+        data= data.to(device)
         with torch.no_grad():
             pred = model(data)
         y_true.append(torch.Tensor.float(data.y.view(-1, 1)).cpu().numpy().tolist())
         y_pred.append(pred.cpu().numpy().tolist())
     y_true = np.concatenate(y_true, axis=None)
     y_pred = np.concatenate(y_pred, axis=None)
+
     predictor_R2_Score, predictor_mse, predictor_mae, predictor_corr = evaluate_model_predictor(y_true,
                                                                                                 y_pred,
                                                                                                 title)
@@ -156,7 +155,6 @@ def testpredictor(model, test_loader, title):
 
 @torch.no_grad()
 def predict_accuracy_using_graph(model, graphLoader):
-    set_seed()
     model.eval()
     search_metric = config["param"]["search_metric"]
     prediction_dict = {}
@@ -244,32 +242,29 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
     train_loader = DataLoader(train_dataset, batch_size=Batch_Size, shuffle=False)
     val_loader = DataLoader(val_dataset, batch_size=Batch_Size, shuffle=False)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr,weight_decay=wd)
-    # scheduler = StepLR(optimizer, step_size=10, gamma=0.05)
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.05, patience=5, verbose=True)
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True)
+
     best_loss = 99999999
     c=0
     print("starting training the predictor ...")
 
-    for e,epoch in tqdm(enumerate(range(num_epoch))):
+    for e,epoch in tqdm(enumerate(range(num_epoch)),total=num_epoch):
         loss = trainpredictor(model, train_loader, optimizer,e)
-
         if e % 5 ==0:
             RMSE_train, pearson_tr, kendall_tr, spearman_tr = testpredictor(model,
                                                                             train_loader,
                                                                             title="Predictor training test")
-            print(f" ❤️Epoch {e}: Loss = {loss} | RMSE= {RMSE_train} | Pearson Cor. = {pearson_tr}")
+            print(f"Epoch {e}: Loss = {loss}  | RMSE= {RMSE_train}  | PCC = {pearson_tr}")
         if loss < best_loss:
             best_loss = loss
             torch.save(model.state_dict(), "predictor.pth")
-        else:
-            c += 1
-            if c == 100:
-                break
-        scheduler.step(loss)
+
+        scheduler.step(RMSE_train)
 
     RMSE_train, pearson_tr, kendall_tr, spearman_tr = testpredictor(model,
                                                                     train_loader,
                                                                     title="Predictor training test")
+
     add_config("results", "RMSE_train", RMSE_train)
     add_config("results", "pearson_train", pearson_tr)
     add_config("results", "kendall_train", kendall_tr)
@@ -293,7 +288,7 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
     start_predict_time = time.time()
     print("Start prediction...")
     edge_index = get_edge_index(sample_list[0])
-    for i in tqdm(lists):
+    for i in tqdm(lists, total=len(lists)):
         a = i + int(config["param"]["batch_sample"])
 
         if a > len(sample_list):
@@ -461,7 +456,7 @@ def get_prediction_from_table(performance_record, e_search_space):
     lists = range(0, len(sample_list), int(config["param"]["batch_sample"]))
     TopK_model = []
 
-    for i in tqdm(lists):
+    for i in tqdm(lists,total=len(lists)):
         a = i + int(config["param"]["batch_sample"])
         if a > len(sample_list):
             a = len(sample_list) - 1
@@ -510,8 +505,8 @@ def get_prediction_from_table(performance_record, e_search_space):
 
 def evaluate_model_predictor(y_true0, y_pred0, title="Predictor training"):
     dataset_name = config["dataset"]["dataset_name"]
-    print("True value:", [a for a in y_true0])
-    print("predict value:", [b for b in y_pred0])
+    # print("True value:", [a for a in y_true0])
+    # print("predict value:", [b for b in y_pred0])
     lst = []
     y_pred = []
     y_true = []

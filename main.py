@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     torch.cuda.empty_cache()
 
-    e_search_space,option_decoder = create_e_search_space()
+    e_search_space,option_decoder = create_e_search_space0()
     total_search_timestart = time.time()
 
     # performance_records_path = get_performance_distributions(e_search_space)
@@ -59,9 +59,9 @@ if __name__ == "__main__":
     TopK_final = get_prediction(performance_records_path,e_search_space,config["predictor"]["predictor_type"])
 
     best_model= get_best_model(TopK_final,option_decoder)
-    Evaluate_best_model(best_model)
+    performances= Evaluate_best_model(best_model)
 
     total_search_time = round(time.time() - total_search_timestart,2)
     add_config("time","total_search_time",total_search_time)
 
-    write_results(best_model)
+    write_results(best_model,performances)

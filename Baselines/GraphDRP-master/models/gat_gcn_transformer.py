@@ -10,17 +10,17 @@ from torch_geometric.nn import global_mean_pool as gap, global_max_pool as gmp
 
 class GAT_GCN_Transformer(torch.nn.Module):
     def __init__(self, n_output=1, num_features_xd=78, num_features_xt=25,
-                 n_filters=32, embed_dim=128, output_dim=128, dropout=0.2):
+                 n_filters=8, embed_dim=128, output_dim=128, dropout=0.2):
         super(GAT_GCN_Transformer, self).__init__()
 
         self.n_output = n_output
         self.encoder_layer_1 = nn.TransformerEncoderLayer(d_model=num_features_xd, nhead=1, dropout=0.5)
         self.ugformer_layer_1 = nn.TransformerEncoder(self.encoder_layer_1, 1)
-        self.conv1 = GATConv(num_features_xd, num_features_xd, heads=10)
-        self.encoder_layer_2 = nn.TransformerEncoderLayer(d_model=num_features_xd * 10, nhead=1, dropout=0.5)
+        self.conv1 = GATConv(num_features_xd, num_features_xd, heads=2)
+        self.encoder_layer_2 = nn.TransformerEncoderLayer(d_model=num_features_xd * 2, nhead=1, dropout=0.5)
         self.ugformer_layer_2 = nn.TransformerEncoder(self.encoder_layer_2, 1)
-        self.conv2 = GCNConv(num_features_xd * 10, num_features_xd * 10)
-        self.fc_g1 = torch.nn.Linear(num_features_xd * 10 * 2, 1500)
+        self.conv2 = GCNConv(num_features_xd * 2, num_features_xd * 2)
+        self.fc_g1 = torch.nn.Linear(num_features_xd * 2*2, 1500)
         self.fc_g2 = torch.nn.Linear(1500, output_dim)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
@@ -32,7 +32,7 @@ class GAT_GCN_Transformer(torch.nn.Module):
         self.pool_xt_2 = nn.MaxPool1d(3)
         self.conv_xt_3 = nn.Conv1d(in_channels=n_filters * 2, out_channels=n_filters * 4, kernel_size=8)
         self.pool_xt_3 = nn.MaxPool1d(3)
-        self.fc1_xt = nn.Linear(7296, output_dim)
+        self.fc1_xt = nn.Linear(1824, output_dim)
 
         # combined layers
         self.fc1 = nn.Linear(2 * output_dim, 1024)
@@ -77,6 +77,7 @@ class GAT_GCN_Transformer(torch.nn.Module):
 
         # flatten
         xt = conv_xt.view(-1, conv_xt.shape[1] * conv_xt.shape[2])
+
         xt = self.fc1_xt(xt)
 
         # concat

@@ -5,11 +5,11 @@ from torch.nn import Sequential, Linear, ReLU
 from torch_geometric.nn import GINConv, global_add_pool
 from torch_geometric.nn import global_mean_pool as gap, global_max_pool as gmp
 
+
 # GINConv model
 class GINConvNet(torch.nn.Module):
-    def __init__(self, n_output=1,num_features_xd=78, num_features_xt=25,
+    def __init__(self, n_output=1, num_features_xd=78, num_features_xt=25,
                  n_filters=32, embed_dim=128, output_dim=128, dropout=0.2):
-
         super(GINConvNet, self).__init__()
 
         dim = 32
@@ -46,14 +46,14 @@ class GINConvNet(torch.nn.Module):
         # cell line feature
         self.conv_xt_1 = nn.Conv1d(in_channels=1, out_channels=n_filters, kernel_size=8)
         self.pool_xt_1 = nn.MaxPool1d(3)
-        self.conv_xt_2 = nn.Conv1d(in_channels=n_filters, out_channels=n_filters*2, kernel_size=8)
+        self.conv_xt_2 = nn.Conv1d(in_channels=n_filters, out_channels=n_filters * 2, kernel_size=8)
         self.pool_xt_2 = nn.MaxPool1d(3)
-        self.conv_xt_3 = nn.Conv1d(in_channels=n_filters*2, out_channels=n_filters*4, kernel_size=8)
+        self.conv_xt_3 = nn.Conv1d(in_channels=n_filters * 2, out_channels=n_filters * 4, kernel_size=8)
         self.pool_xt_3 = nn.MaxPool1d(3)
         self.fc1_xt = nn.Linear(7296, output_dim)
 
         # combined layers
-        self.fc1 = nn.Linear(2*output_dim, 1024)
+        self.fc1 = nn.Linear(2 * output_dim, 1024)
         self.fc2 = nn.Linear(1024, 128)
         self.out = nn.Linear(128, n_output)
 
@@ -63,8 +63,8 @@ class GINConvNet(torch.nn.Module):
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
-        #print(x)
-        #print(data.target)
+        # print(x)
+        # print(data.target)
         x = F.relu(self.conv1(x, edge_index))
         x = self.bn1(x)
         x = F.relu(self.conv2(x, edge_index))
@@ -81,7 +81,7 @@ class GINConvNet(torch.nn.Module):
 
         # protein input feed-forward:
         target = data.target
-        target = target[:,None,:]
+        target = target[:, None, :]
 
         # 1d conv layers
         conv_xt = self.conv_xt_1(target)
@@ -93,11 +93,11 @@ class GINConvNet(torch.nn.Module):
         conv_xt = self.conv_xt_3(conv_xt)
         conv_xt = F.relu(conv_xt)
         conv_xt = self.pool_xt_3(conv_xt)
-        
+
         # flatten
         xt = conv_xt.view(-1, conv_xt.shape[1] * conv_xt.shape[2])
         xt = self.fc1_xt(xt)
-        
+
         # concat
         xc = torch.cat((x, xt), 1)
         # add some dense layers
@@ -108,5 +108,5 @@ class GINConvNet(torch.nn.Module):
         xc = self.relu(xc)
         xc = self.dropout(xc)
         out = self.out(xc)
-        # out = nn.Sigmoid()(out)
+        out = nn.Sigmoid()(out)
         return out, x

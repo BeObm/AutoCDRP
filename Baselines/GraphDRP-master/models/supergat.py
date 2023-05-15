@@ -13,8 +13,8 @@ class SuperGATNet(torch.nn.Module):
         super(SuperGATNet, self).__init__()
 
         # graph layers
-        self.gcn1 = SuperGATConv(num_features_xd, num_features_xd, heads=3, dropout=dropout)
-        self.gcn2 = SuperGATConv(num_features_xd * 3, output_dim, dropout=dropout)
+        self.gcn1 = SuperGATConv(num_features_xd, num_features_xd, heads=2, dropout=dropout)
+        self.gcn2 = SuperGATConv(num_features_xd * 2, output_dim, dropout=dropout)
         self.fc_g1 = nn.Linear(output_dim, output_dim)
 
         # cell line feature

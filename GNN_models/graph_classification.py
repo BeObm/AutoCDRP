@@ -19,7 +19,7 @@ from settings.config_file import *
 import torch.nn as nn
 
 
-class GNN_Model(MessagePassing):
+class GNN_Model(torch.nn.Module):
     def __init__(self, param_dict, n_output=2, n_filters=32):
         super(GNN_Model, self).__init__()
         self.aggr1 = param_dict['aggregation1']

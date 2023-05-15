@@ -37,7 +37,7 @@ def create_e_search_space(a=0,b=1):   # a<b
   
     
     # attention= ["GraphConv","GCNConv","GATv2Conv","GATConv","GENConv","ChebConv"]
-    attention= ["GCNConv","GATConv","linear","GENConv","SGConv"]
+    attention= ["GCNConv","GATConv","linear","GENConv","SGConv","LEConv"]
 
     agregation=['add',"max","mean"] 
     activation=["PReLU","sigmoid","relu"]
@@ -58,13 +58,13 @@ def create_e_search_space(a=0,b=1):   # a<b
     sp['hidden_channels']= hidden_channels
     sp['dropout']= [0.2, 0.5,0.4]
     sp['lr']= [1e-4,1e-2, 1e-3]
-    sp['weight_decay']=[0,1e-4, 1e-3, 1e-2]
+    sp['weight_decay']=[0,1e-5, 1e-6]
     if "regression" in config['dataset']['type_task']:
-        sp['criterion'] = ["MSELoss"]
+        sp['criterion'] = ["MSELoss","smooth_l1_loss"]
     elif "classification" in config['dataset']['type_task']:
         sp['criterion'] = ["CrossEntropyLoss"]
     sp['pooling']=["global_max_pool"]
-    sp["optimizer"] = ["adam"]#
+    sp["optimizer"] = ["adam","sgd"]#
     sp['normalize1'] =["BatchNorm"]
     sp['normalize2'] =["BatchNorm"]
 
@@ -133,9 +133,9 @@ def create_e_search_space0(a=0, b=1):  # a<b
     sp['multi_head2'] = multi_head
 
     sp['hidden_channels'] = hidden_channels
-    sp['dropout'] = [0.2, 0.5, 0.4,0.6]
+    sp['dropout'] = [0.2, 0.5, 0.4]
     sp['lr'] = [1e-2, 1e-3, 5e-4, 1e-4, 5e-3]
-    sp['weight_decay'] = [0,1e-4, 1e-3, 1e-2]
+    sp['weight_decay'] = [0,1e-5, 1e-3]
     if "regression" in config['dataset']['type_task']:
         sp['criterion'] = ["MSELoss", "smooth_l1_loss"]
     elif "classification" in config['dataset']['type_task']:
