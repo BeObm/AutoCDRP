@@ -78,7 +78,7 @@ def create_config_file(dataset_name,run_detail,type_task):
     }
 
     config["predictor"] = {
-        "predictor_type":"GCN",
+        "predictor_type":"GAT",
         "dim": 1024,
         "drop_out": 0.3,
         "lr": 0.0001,

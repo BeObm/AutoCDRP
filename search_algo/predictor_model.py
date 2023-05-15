@@ -116,6 +116,7 @@ class Predictor(torch.nn.Module):
 
 
 def trainpredictor(predictor_model, train_loader, optimizer,epoch):
+    scheduler=torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.01, max_lr=0.1)
     predictor_model.train()
     avg_loss = []
     # loss_fct=torch.nn.MSELoss(reduction='sum')
@@ -129,6 +130,7 @@ def trainpredictor(predictor_model, train_loader, optimizer,epoch):
         loss.backward()
         loss_all += data.num_graphs * loss.item()
         optimizer.step()
+        scheduler.step()
     loss = loss_all / len(train_loader.dataset)
     return loss
 
@@ -242,7 +244,8 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
     train_loader = DataLoader(train_dataset, batch_size=Batch_Size, shuffle=False)
     val_loader = DataLoader(val_dataset, batch_size=Batch_Size, shuffle=False)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr,weight_decay=wd)
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True)
+    scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.01, max_lr=0.1)
+    # scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True)
 
     best_loss = 99999999
     c=0
@@ -259,7 +262,7 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
             best_loss = loss
             torch.save(model.state_dict(), "predictor.pth")
 
-        scheduler.step(RMSE_train)
+
 
     RMSE_train, pearson_tr, kendall_tr, spearman_tr = testpredictor(model,
                                                                     train_loader,
