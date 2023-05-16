@@ -78,12 +78,12 @@ def create_config_file(dataset_name,run_detail,type_task):
     }
 
     config["predictor"] = {
-        "predictor_type":"GAT",
-        "dim": 1024,
-        "drop_out": 0.3,
-        "lr": 0.0001,
-        "wd": 0,
-        "num_epoch": 5000,
+        "predictor_type":"GEN",
+        "dim": 256,
+        "drop_out": 0.2,
+        "lr": 0.001,
+        "wd": 0.001,
+        "num_epoch": 3000,
         "comit_test": "yes"
     }
 

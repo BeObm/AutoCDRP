@@ -62,17 +62,17 @@ def load_dataset(train_batch, val_batch, test_batch, lr, num_epoch, dataset, exp
     print('Learning rate: ', lr)
     print('Epochs: ', num_epoch)
 
-    processed_data_file_train = 'data/' + dataset + '/processed/' + f'{dataset}_{experiment}_train.pt'
-    processed_data_file_val = 'data/' + dataset + '/processed/' + f'{dataset}_{experiment}_val.pt'
-    processed_data_file_test = 'data/' + dataset + '/processed/' + f'{dataset}_{experiment}_test.pt'
+    processed_data_file_train = 'Baselines/GraphDRP-master/data/' + dataset + '/processed/' + f'{dataset}_{experiment}_train.pt'
+    processed_data_file_val = 'Baselines/GraphDRP-master/data/' + dataset + '/processed/' + f'{dataset}_{experiment}_val.pt'
+    processed_data_file_test = 'Baselines/GraphDRP-master/data/' + dataset + '/processed/' + f'{dataset}_{experiment}_test.pt'
     if ((not os.path.isfile(processed_data_file_train)) or (not os.path.isfile(processed_data_file_val)) or (
             not os.path.isfile(processed_data_file_test))):
         print('please run create_data.py to prepare data in pytorch format!')
         exit()
     else:
-        train_data = TestbedDataset(root='data/' + dataset, dataset=f'{dataset}_{experiment}_train')
-        val_data = TestbedDataset(root='data/' + dataset, dataset=f'{dataset}_{experiment}_val')
-        test_data = TestbedDataset(root='data/' + dataset, dataset=f'{dataset}_{experiment}_test')
+        train_data = TestbedDataset(root='Baselines/GraphDRP-master/data/' + dataset, dataset=f'{dataset}_{experiment}_train')
+        val_data = TestbedDataset(root='Baselines/GraphDRP-master/data/' + dataset, dataset=f'{dataset}_{experiment}_val')
+        test_data = TestbedDataset(root='Baselines/GraphDRP-master/data/' + dataset, dataset=f'{dataset}_{experiment}_test')
 
         # make data PyTorch mini-batch processing ready
         train_loader = DataLoader(train_data, batch_size=train_batch, shuffle=True)
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_epoch', type=int, required=False, default=300, help='Number of epoch')
     parser.add_argument('--log_interval', type=int, required=False, default=20, help='Log interval')
     parser.add_argument('--cuda_name', type=str, required=False, default="cuda:0", help='Cuda')
-    parser.add_argument('--dataset', type=str, required=False, default="CCLE", help='dataset name')
+    parser.add_argument('--dataset', type=str, required=False, default="GDSC", help='dataset name')
     parser.add_argument('--experiment', type=str, required=False, default="mix", help='type of experiment',
                         choices=["mix", "drug_blind", "cell_blind"])
 

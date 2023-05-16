@@ -164,7 +164,7 @@ def get_best_model(topk_list, option_decoder):
                         dict_model[function] = option_decoder[row[function]]
 
         model, criterion, optimizer = get_model_instance2(dict_model, task_model)
-        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True)
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=15, verbose=True)
 
         try:
             model.load_state_dict(best_loss_param_path)
