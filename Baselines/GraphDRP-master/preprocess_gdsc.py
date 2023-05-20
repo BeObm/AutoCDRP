@@ -577,7 +577,7 @@ def save_best_individual_drug_cell_matrix():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='prepare dataset to train model')
-    parser.add_argument('--choice', type=int, required=False, default=3,
+    parser.add_argument('--choice', type=int, required=False, default=0,
                         help='0.mix test, 1.saliency value, 2.drug blind, 3.cell blind')
     args = parser.parse_args()
     choice = args.choice

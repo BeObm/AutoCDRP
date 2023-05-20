@@ -14,8 +14,10 @@ class MGATAFNet(torch.nn.Module):
         self.n_output = n_output
         self.conv1 = TAGConv(num_features_xd, num_features_xd)
         self.conv2 = TAGConv(num_features_xd, num_features_xd*2)
-        self.conv3 = TAGConv(num_features_xd*2, num_features_xd * 4)
-        self.fc_g1 = torch.nn.Linear(num_features_xd*4, 1024)
+        self.conv3 = TAGConv(num_features_xd*2, num_features_xd * 3)
+        self.conv4 = TAGConv(num_features_xd*3, num_features_xd * 4)
+        self.conv5 = TAGConv(num_features_xd*4, num_features_xd * 3)
+        self.fc_g1 = torch.nn.Linear(num_features_xd*3, 1024)
         self.fc_g2 = torch.nn.Linear(1024, output_dim)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
@@ -27,7 +29,7 @@ class MGATAFNet(torch.nn.Module):
         self.pool_xt_2 = nn.MaxPool1d(3)
         self.conv_xt_3 = nn.Conv1d(in_channels=n_filters*2, out_channels=n_filters*4, kernel_size=8)
         self.pool_xt_3 = nn.MaxPool1d(3)
-        self.fc1_xt = nn.Linear(2944, output_dim)
+        self.fc1_xt = nn.Linear(7296, output_dim)   #2944
 
         # combined layers
         self.fc1 = nn.Linear(2*output_dim, 1024)
@@ -49,6 +51,13 @@ class MGATAFNet(torch.nn.Module):
 
         x = self.conv3(x, edge_index)
         x = self.relu(x)
+
+        x = self.conv4(x, edge_index)
+        x = self.relu(x)
+
+        x = self.conv5(x, edge_index)
+        x = self.relu(x)
+
         x = gmp(x, batch)       # global max pooling
 
         # flatten

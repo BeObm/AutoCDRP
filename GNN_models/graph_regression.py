@@ -197,7 +197,6 @@ class GNN_Model(torch.nn.Module):
     def forward(self, data):
 
         x, edge_index, batch = data.x, data.edge_index, data.batch
-        x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.conv1(x, edge_index)
         # x = self.batchnorm1(x)
         x = self.activation1(x)

@@ -81,15 +81,15 @@ class Predictor(torch.nn.Module):
                              Linear(self.dim, self.dim))
             return GINConv(nn1), GINConv(nn2)
         elif conv == "GCN":
-            return GCNConv(self.in_channels, self.dim), GCNConv(self.dim, self.dim),GCNConv(self.dim, self.dim)
+            return GCNConv(self.in_channels, self.dim*2), GCNConv(self.dim*2, self.dim*4),GCNConv(self.dim*4, self.dim)
         elif conv == "GAT":
-            return GATConv(self.in_channels, self.dim, heads=20, dropout=self.drop_out), GATConv(self.dim * 20, self.dim,
-                                                                                                dropout=self.drop_out,heads=10),GATConv(self.dim * 10, self.dim,
+            return GATConv(self.in_channels, self.dim*2, heads=20, dropout=self.drop_out), GATConv(self.dim * 40, self.dim*2,
+                                                                                                dropout=self.drop_out,heads=10),GATConv(self.dim *20, self.dim,
                                                                                                 dropout=self.drop_out)
         elif conv == "GEN":
-            return GENConv(self.in_channels, self.dim), GENConv(self.dim, self.dim),GENConv(self.dim, self.dim)
+            return GENConv(self.in_channels, self.dim*2), GENConv(self.dim*2, self.dim*4),GENConv(self.dim*4, self.dim)
         elif conv == "MLP":
-            return LinearConv(self.in_channels, self.dim), LinearConv(self.dim, self.dim),LinearConv(self.dim, self.dim)
+            return LinearConv(self.in_channels, self.dim*4), LinearConv(self.dim*4, self.dim*2),LinearConv(self.dim*2, self.dim)
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
@@ -115,7 +115,7 @@ class Predictor(torch.nn.Module):
         return x
 
 
-def trainpredictor(predictor_model, train_loader,epoch):
+def trainpredictor(predictor_model, train_loader,optimizer,epoch):
     predictor_model.train()
     avg_loss = []
     # loss_fct=torch.nn.MSELoss(reduction='sum')
@@ -242,15 +242,15 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
     model.to(device)
     train_loader = DataLoader(train_dataset, batch_size=Batch_Size, shuffle=False)
     val_loader = DataLoader(val_dataset, batch_size=Batch_Size, shuffle=False)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr,weight_decay=wd)
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=15, verbose=True)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr,weight_decay=wd,amsgrad=True)
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=15, verbose=True)
 
     best_loss = 99999999
     c=0
     print("starting training the predictor ...")
 
     for e,epoch in tqdm(enumerate(range(num_epoch)),total=num_epoch):
-        loss = trainpredictor(model, train_loader, optimizer,e)
+        loss = trainpredictor(model, train_loader,optimizer,e)
         if e % 5 ==0:
             RMSE_train, pearson_tr, kendall_tr, spearman_tr = testpredictor(model,
                                                                             train_loader,

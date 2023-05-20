@@ -20,6 +20,7 @@ from torch.optim.lr_scheduler import  ReduceLROnPlateau
 import datetime
 import argparse
 
+folder = "D:/PHD/Codes/AutoML/AutoCDRP/Baselines/GraphDRP-master/data/"
 
 # training function at each epoch
 def train(model, device, train_loader, optimizer, epoch, log_interval):
@@ -62,17 +63,17 @@ def load_dataset(train_batch, val_batch, test_batch, lr, num_epoch, dataset, exp
     print('Learning rate: ', lr)
     print('Epochs: ', num_epoch)
 
-    processed_data_file_train = 'Baselines/GraphDRP-master/data/' + dataset + '/processed/' + f'{dataset}_{experiment}_train.pt'
-    processed_data_file_val = 'Baselines/GraphDRP-master/data/' + dataset + '/processed/' + f'{dataset}_{experiment}_val.pt'
-    processed_data_file_test = 'Baselines/GraphDRP-master/data/' + dataset + '/processed/' + f'{dataset}_{experiment}_test.pt'
+    processed_data_file_train = folder + dataset + '/processed/' + f'{dataset}_{experiment}_train.pt'
+    processed_data_file_val = folder + dataset + '/processed/' + f'{dataset}_{experiment}_val.pt'
+    processed_data_file_test = folder + dataset + '/processed/' + f'{dataset}_{experiment}_test.pt'
     if ((not os.path.isfile(processed_data_file_train)) or (not os.path.isfile(processed_data_file_val)) or (
             not os.path.isfile(processed_data_file_test))):
         print('please run create_data.py to prepare data in pytorch format!')
         exit()
     else:
-        train_data = TestbedDataset(root='Baselines/GraphDRP-master/data/' + dataset, dataset=f'{dataset}_{experiment}_train')
-        val_data = TestbedDataset(root='Baselines/GraphDRP-master/data/' + dataset, dataset=f'{dataset}_{experiment}_val')
-        test_data = TestbedDataset(root='Baselines/GraphDRP-master/data/' + dataset, dataset=f'{dataset}_{experiment}_test')
+        train_data = TestbedDataset(root=folder + dataset, dataset=f'{dataset}_{experiment}_train')
+        val_data = TestbedDataset(root=folder + dataset, dataset=f'{dataset}_{experiment}_val')
+        test_data = TestbedDataset(root=folder + dataset, dataset=f'{dataset}_{experiment}_test')
 
         # make data PyTorch mini-batch processing ready
         train_loader = DataLoader(train_data, batch_size=train_batch, shuffle=True)
@@ -148,16 +149,16 @@ def main(modeling, train_loader, val_loader, test_loader, lr, num_epoch, log_int
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='train model')
-    parser.add_argument('--model', type=int, required=False, default=8,
-                        help='0: GINConvNet, 1: GATNet, 2: GAT_GCN, 3: GCNNet')
+    parser.add_argument('--model', type=int, required=False, default=5,
+                        help='2: GINConvNet, 1: GATNet, 2: GAT_GCN, 3: GCNNet')
     parser.add_argument('--train_batch', type=int, required=False, default=512, help='Batch size training set')
-    parser.add_argument('--val_batch', type=int, required=False, default=512, help='Batch size validation set')
+    parser.add_argument('--val_batch', type=int, required=False, default=128, help='Batch size validation set')
     parser.add_argument('--test_batch', type=int, required=False, default=512, help='Batch size test set')
     parser.add_argument('--lr', type=float, required=False, default=1e-4, help='Learning rate')
     parser.add_argument('--num_epoch', type=int, required=False, default=300, help='Number of epoch')
     parser.add_argument('--log_interval', type=int, required=False, default=20, help='Log interval')
     parser.add_argument('--cuda_name', type=str, required=False, default="cuda:0", help='Cuda')
-    parser.add_argument('--dataset', type=str, required=False, default="GDSC", help='dataset name')
+    parser.add_argument('--dataset', type=str, required=False, default="CCLE", help='dataset name')
     parser.add_argument('--experiment', type=str, required=False, default="mix", help='type of experiment',
                         choices=["mix", "drug_blind", "cell_blind"])
 

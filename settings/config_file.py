@@ -57,14 +57,14 @@ def create_config_file(dataset_name,run_detail,type_task):
         'config_filename': config_filename,
         "run_code": RunCode,
         "budget": 800,
-        "k": 50,
+        "k": 25,
         "z_sample": 1,  # Number of time  sampled models are trained before we report their performance
         "z_topk": 1,
         "z_final": 1,
         "nfcode": 56,  # number of digit for each function code when using embedding method
         "noptioncode": 8,
         "sample_model_epochs": 300,
-        "topk_model_epochs": 100,
+        "topk_model_epochs": 200,
         "best_model_epochs": 300,
         "encoding_method": "one_hot",
         "type_sampling": "controlled_stratified_sampling",  # random_sampling, uniform_sampling, controlled_stratified_sampling
@@ -79,10 +79,10 @@ def create_config_file(dataset_name,run_detail,type_task):
 
     config["predictor"] = {
         "predictor_type":"GEN",
-        "dim": 256,
-        "drop_out": 0.2,
+        "dim": 512,
+        "drop_out": 0.4,
         "lr": 0.001,
-        "wd": 0.001,
+        "wd": 0,
         "num_epoch": 3000,
         "comit_test": "yes"
     }

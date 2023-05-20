@@ -32,7 +32,7 @@ class GAT_GCN_Transformer(torch.nn.Module):
         self.pool_xt_2 = nn.MaxPool1d(3)
         self.conv_xt_3 = nn.Conv1d(in_channels=n_filters * 2, out_channels=n_filters * 4, kernel_size=8)
         self.pool_xt_3 = nn.MaxPool1d(3)
-        self.fc1_xt = nn.Linear(2944, output_dim)
+        self.fc1_xt = nn.Linear(1824, output_dim)
 
         # combined layers
         self.fc1 = nn.Linear(2 * output_dim, 1024)
@@ -77,7 +77,7 @@ class GAT_GCN_Transformer(torch.nn.Module):
 
         # flatten
         xt = conv_xt.view(-1, conv_xt.shape[1] * conv_xt.shape[2])
-
+        # print("shape",xt.shape)
         xt = self.fc1_xt(xt)
 
         # concat
