@@ -57,7 +57,39 @@ def get_prediction(performance_records, e_search_space, regressor_model_type):
     return TopK_final
 
 
-class Predictor(torch.nn.Module):
+class Predictor(MessagePassing):
+    def __init__(self, in_channels, dim, out_channels, drop_out):
+        super(Predictor, self).__init__()
+        #         self.embed_edges = Linear(self.edge_attr_size, self.hidden_channels)
+        # print("in channels dim =",in_channels)
+        self.conv1 = GCNConv(in_channels, dim, aggr="mean")
+
+        self.conv2 = GCNConv(dim, dim, aggr="mean")
+        self.drop_out = drop_out
+        # self.normalize = InstanceNorm(dim)
+        self.graphnorm = GraphNorm(dim)
+        self.linear = Linear(dim, 64)
+        self.linear2 = Linear(64, out_channels)
+
+    def forward(self, data):
+        x, edge_index, batch= data.x, data.edge_index, data.batch
+
+        x = self.conv1(x, edge_index)
+        x = F.dropout(x, p=self.drop_out, training=self.training)
+
+        x = F.relu(self.conv2(x, edge_index))
+        x = F.dropout(x, p=self.drop_out, training=self.training)
+
+        x = global_add_pool(x, batch)
+        x = self.graphnorm(x)
+
+        x = F.relu(self.linear(x))
+        x = self.linear2(x)
+
+        return x
+
+
+class Predictor6(torch.nn.Module):
     def __init__(self, in_channels, dim, out_channels, drop_out, conv="GAT"):
         super(Predictor, self).__init__()
         self.in_channels = in_channels
@@ -83,8 +115,8 @@ class Predictor(torch.nn.Module):
         elif conv == "GCN":
             return GCNConv(self.in_channels, self.dim*2), GCNConv(self.dim*2, self.dim*4),GCNConv(self.dim*4, self.dim)
         elif conv == "GAT":
-            return GATConv(self.in_channels, self.dim*2, heads=20, dropout=self.drop_out), GATConv(self.dim * 40, self.dim*2,
-                                                                                                dropout=self.drop_out,heads=10),GATConv(self.dim *20, self.dim,
+            return GATConv(self.in_channels, self.dim*2, heads=5, dropout=self.drop_out), GATConv(self.dim * 10, self.dim*3,
+                                                                                                dropout=self.drop_out,heads=5),GATConv(self.dim *15, self.dim,
                                                                                                 dropout=self.drop_out)
         elif conv == "GEN":
             return GENConv(self.in_channels, self.dim*2), GENConv(self.dim*2, self.dim*4),GENConv(self.dim*4, self.dim)
@@ -111,7 +143,7 @@ class Predictor(torch.nn.Module):
         x = self.relu(x)
 
         x = self.linear2(x)
-        # x = nn.Sigmoid()(x)
+        x = nn.Sigmoid()(x)
         return x
 
 
@@ -238,12 +270,12 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
         if config["param"]["feature_size_choice"] == "total_choices":
             feature_size = int(config["param"]["total_choices"])
 
-    model = Predictor(feature_size, dim, 1, drop_out, regressor_model_type)
+    model = Predictor(feature_size, dim, 1, drop_out)
     model.to(device)
     train_loader = DataLoader(train_dataset, batch_size=Batch_Size, shuffle=False)
     val_loader = DataLoader(val_dataset, batch_size=Batch_Size, shuffle=False)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr,weight_decay=wd,amsgrad=True)
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=15, verbose=True)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr,weight_decay=wd,amsgrad=False)
+    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=200, verbose=True)
 
     best_loss = 99999999
     c=0
@@ -251,10 +283,11 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
 
     for e,epoch in tqdm(enumerate(range(num_epoch)),total=num_epoch):
         loss = trainpredictor(model, train_loader,optimizer,e)
-        if e % 5 ==0:
-            RMSE_train, pearson_tr, kendall_tr, spearman_tr = testpredictor(model,
-                                                                            train_loader,
-                                                                            title="Predictor training test")
+
+        RMSE_train, pearson_tr, kendall_tr, spearman_tr = testpredictor(model,
+                                                                        train_loader,title="Predictor training test")
+        if e % 5 == 0:
+
             print(f"Epoch {e}: Loss = {loss}  | RMSE= {RMSE_train}  | PCC = {pearson_tr}")
         if loss < best_loss:
             best_loss = loss
@@ -310,7 +343,7 @@ def get_prediction_from_graph(performance_record, e_search_space, regressor_mode
 
         sample_dataset = DataLoader(graph_list, batch_size=Batch_Size, shuffle=False)
 
-        Trained_model = Predictor(feature_size, dim, 1, drop_out, regressor_model_type).to(device)
+        Trained_model = Predictor(feature_size, dim, 1, drop_out).to(device)
         Trained_model.load_state_dict(torch.load("predictor.pth"))
 
         TopK = predict_accuracy_using_graph(Trained_model, sample_dataset)

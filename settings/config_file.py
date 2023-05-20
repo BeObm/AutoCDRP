@@ -14,7 +14,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 num_workers = 30
 num_seed = 1024
 config = ConfigParser()
-Batch_Size = 1024
+Batch_Size = 64
 
 RunCode = dates = datetime.now().strftime("%d-%m_%Hh%M")
 
@@ -78,9 +78,9 @@ def create_config_file(dataset_name,run_detail,type_task):
     }
 
     config["predictor"] = {
-        "predictor_type":"GEN",
-        "dim": 512,
-        "drop_out": 0.4,
+        "predictor_type":"GAT",
+        "dim": 1024,
+        "drop_out": 0.3,
         "lr": 0.001,
         "wd": 0,
         "num_epoch": 3000,
