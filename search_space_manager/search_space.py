@@ -56,7 +56,7 @@ def create_e_search_space(a=0,b=1):   # a<b
     sp['multi_head2']=multi_head
 
     sp['hidden_channels']= hidden_channels
-    sp['dropout']= [0.2, 0.5,0.4]
+    sp['dropout']= [0.2, 0.5,0.4,0.3]
     sp['lr']= [1e-4,1e-2, 1e-3]
     sp['weight_decay']=[0,1e-5, 1e-6]
     if "regression" in config['dataset']['type_task']:

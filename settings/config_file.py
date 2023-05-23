@@ -83,7 +83,7 @@ def create_config_file(dataset_name,run_detail,type_task):
         "drop_out": 0.3,
         "lr": 0.001,
         "wd": 0,
-        "num_epoch": 3000,
+        "num_epoch": 5000,
         "comit_test": "yes"
     }
 

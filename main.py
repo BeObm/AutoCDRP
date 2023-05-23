@@ -35,7 +35,7 @@ if __name__ == "__main__":
     parser.add_argument("--type_task" , help="type_task", default="graph regression")
     parser.add_argument("--search_metric", type=str, default="RMSE", help="metric for search guidance",choices=["spearmanr","pcc","auc_pr","mcc","f1score","auc_roc","RMSE"])
 
-    parser.add_argument("--experiment", type=str, default="mix", help="type of experiment") # "cell_blind", "drug_blind","mix"
+    parser.add_argument("--experiment", type=str, default="cell_blind", help="type of experiment") # "cell_blind", "drug_blind","mix"
     args = parser.parse_args()
 
     create_config_file(args.dataset_name,args.experiment,args.type_task)
@@ -49,12 +49,12 @@ if __name__ == "__main__":
 
     torch.cuda.empty_cache()
 
-    e_search_space,option_decoder = create_e_search_space0()
+    e_search_space,option_decoder = create_e_search_space()
     total_search_timestart = time.time()
 
     # performance_records_path = get_performance_distributions(e_search_space)
     #
-    performance_records_path ="data/Pedictor_dataset_CCLE_MIX_REG"
+    performance_records_path ="data/Predictor_dataset_CCLE_DB_REG"
 
     TopK_final = get_prediction(performance_records_path,e_search_space,config["predictor"]["predictor_type"])
 

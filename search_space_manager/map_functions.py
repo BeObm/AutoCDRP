@@ -282,7 +282,7 @@ def map_criterion(criterion):
         
 def map_optimizer(optimizers,model,lr,weight_decay=False):
     if optimizers =='adam':
-        return torch.optim.Adam(model.parameters(),lr=lr,weight_decay=0,amsgrad=True)
+        return torch.optim.Adam(model.parameters(),lr=lr,weight_decay=0,amsgrad=False)
     elif optimizers =='sgd':
         return torch.optim.SGD(model.parameters(),lr=lr,weight_decay=0)
     else:

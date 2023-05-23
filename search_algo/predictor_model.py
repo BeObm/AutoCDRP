@@ -62,9 +62,8 @@ class Predictor(MessagePassing):
         super(Predictor, self).__init__()
         #         self.embed_edges = Linear(self.edge_attr_size, self.hidden_channels)
         # print("in channels dim =",in_channels)
-        self.conv1 = GCNConv(in_channels, dim, aggr="mean")
-
-        self.conv2 = GCNConv(dim, dim, aggr="mean")
+        self.conv1 = GCNConv(in_channels, dim*3, aggr="mean")
+        self.conv2 = GCNConv(dim*3, dim, aggr="mean")
         self.drop_out = drop_out
         # self.normalize = InstanceNorm(dim)
         self.graphnorm = GraphNorm(dim)
@@ -73,7 +72,6 @@ class Predictor(MessagePassing):
 
     def forward(self, data):
         x, edge_index, batch= data.x, data.edge_index, data.batch
-
         x = self.conv1(x, edge_index)
         x = F.dropout(x, p=self.drop_out, training=self.training)
 
