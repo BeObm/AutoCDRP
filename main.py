@@ -52,9 +52,9 @@ if __name__ == "__main__":
     e_search_space,option_decoder = create_e_search_space()
     total_search_timestart = time.time()
 
-    # performance_records_path = get_performance_distributions(e_search_space)
-    #
-    performance_records_path ="data/Predictor_dataset_CCLE_DB_REG"
+    performance_records_path = get_performance_distributions(e_search_space)
+
+    # performance_records_path ="data/Predictor_dataset_CCLE_DB_REG"
 
     TopK_final = get_prediction(performance_records_path,e_search_space,config["predictor"]["predictor_type"])
 

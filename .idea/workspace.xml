@@ -53,7 +53,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PythonContentEntriesConfigurable&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -217,6 +217,9 @@
       <workItem from="1684516475792" duration="15775000" />
       <workItem from="1684646366210" duration="12511000" />
       <workItem from="1684716135720" duration="1334000" />
+      <workItem from="1684979358466" duration="3766000" />
+      <workItem from="1684983651800" duration="284000" />
+      <workItem from="1684994465405" duration="1779000" />
     </task>
     <servers />
   </component>
@@ -235,6 +238,11 @@
           <url>file://$PROJECT_DIR$/Baselines/GraphDRP-master/preprocess.py</url>
           <line>460</line>
           <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="jupyter-line">
+          <url>notebook://D:/PHD/Codes/AutoML/AutoCDRP/Statistical Analysis/MethodComparisonsInPython-master/StatisticalTests.ipynb</url>
+          <line>1</line>
+          <option name="timeStamp" value="4" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
