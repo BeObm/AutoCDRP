@@ -198,13 +198,13 @@ class GNN_Model(torch.nn.Module):
 
         x, edge_index, batch = data.x, data.edge_index, data.batch
         x = self.conv1(x, edge_index)
-        # x = self.batchnorm1(x)
+        x = self.batchnorm1(x)
         x = self.activation1(x)
         # x=self.dropout2(x)
         x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.conv2(x, edge_index)
 
-        # x = self.batchnorm2(x)
+        x = self.batchnorm2(x)
         x = self.activation2(x)
         # x = self.dropout2(x)
 
@@ -213,7 +213,6 @@ class GNN_Model(torch.nn.Module):
 
         x = self.global_pooling(x, batch)  # [batch_size, self.hidden_channels]
         x = self.mlp_x(x)
-
 
 
         target = data.target
