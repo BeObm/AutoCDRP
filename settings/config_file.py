@@ -14,7 +14,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 num_workers = 30
 num_seed = 1024
 config = ConfigParser()
-Batch_Size = 64
+Batch_Size = 32
 
 RunCode = dates = datetime.now().strftime("%d-%m_%Hh%M")
 
@@ -57,7 +57,7 @@ def create_config_file(dataset_name,run_detail,type_task):
         'config_filename': config_filename,
         "run_code": RunCode,
         "budget": 800,
-        "k": 25,
+        "k": 100,
         "z_sample": 1,  # Number of time  sampled models are trained before we report their performance
         "z_topk": 1,
         "z_final": 1,

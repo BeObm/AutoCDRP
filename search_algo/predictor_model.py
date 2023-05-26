@@ -600,8 +600,8 @@ def evaluate_model_predictor(y_true0, y_pred0, title="Predictor training"):
 
 def compute_metrics(y_true, y_pred):
     performance = {}
-    print([a for a in y_true])
-    print([b for b in y_pred])
+    # print([a for a in y_true])
+    # print([b for b in y_pred])
     if "classification" in config["dataset"]["type_task"]:
         acc = accuracy_score(y_true, y_pred)
         f1 = f1_score(y_true, y_pred, average='macro')
