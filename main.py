@@ -54,8 +54,6 @@ if __name__ == "__main__":
 
     performance_records_path = get_performance_distributions(e_search_space)
 
-    # performance_records_path ="data/Predictor_dataset_CCLE_DB_REG"
-
     TopK_final = get_prediction(performance_records_path,e_search_space,config["predictor"]["predictor_type"])
 
     best_model= get_best_model(TopK_final,option_decoder)
