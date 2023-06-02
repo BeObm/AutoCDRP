@@ -63,7 +63,7 @@ def create_config_file(dataset_name,run_detail,type_task):
         "z_final": 1,
         "nfcode": 56,  # number of digit for each function code when using embedding method
         "noptioncode": 8,
-        "sample_model_epochs": 300,
+        "sample_model_epochs": 200,
         "topk_model_epochs": 200,
         "best_model_epochs": 300,
         "encoding_method": "one_hot",
