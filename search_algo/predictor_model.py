@@ -4,45 +4,37 @@ Created on Sat Jun  5 10:44:23 2021
 @author: Mo
 """
 
-# from sklearn.preprocessing import OneHotEncoder
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.metrics import mean_squared_error, r2_score
-import time
-import matplotlib
-from tqdm import tqdm
+
+from sklearn.metrics import mean_squared_error
+
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from sklearn.metrics import precision_recall_curve, roc_auc_score, average_precision_score, matthews_corrcoef
 from sklearn.metrics import precision_score, auc, recall_score, balanced_accuracy_score, accuracy_score, f1_score
-import warnings
 from scipy.stats import kendalltau, spearmanr, pearsonr
 import math
 from scipy import stats
 from search_algo.utils import *
-from search_space_manager.map_functions import map_activation_function
 from torch_geometric.nn import MessagePassing
 from sklearn.preprocessing import LabelEncoder
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
-from search_space_manager.search_space import *
 from search_space_manager.sample_models import *
 from sklearn.model_selection import train_test_split
 from copy import deepcopy
-from torch_geometric.nn import global_add_pool, global_max_pool  # global_mean_pool, global_max_pool,
+from torch_geometric.nn import global_add_pool  # global_mean_pool, global_max_pool,
 from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
 from collections import defaultdict
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import AdaBoostRegressor
 import glob
-from torch_geometric.nn.norm import GraphNorm
 from sklearn.linear_model import SGDRegressor, LassoCV
 from torch.nn import Linear, Sequential, ReLU
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, GINConv, GraphConv, SAGEConv, GATConv, LEConv, GENConv, GeneralConv, \
-    TransformerConv
-from torch_geometric.nn.norm import GraphNorm, InstanceNorm, BatchNorm
+from torch_geometric.nn import GCNConv, GINConv, GATConv, GENConv
+
+from torch_geometric.nn.norm import GraphNorm
 from search_space_manager.map_functions import LinearConv
 from settings.config_file import *
 
@@ -62,8 +54,8 @@ class Predictor(MessagePassing):
         super(Predictor, self).__init__()
         #         self.embed_edges = Linear(self.edge_attr_size, self.hidden_channels)
         # print("in channels dim =",in_channels)
-        self.conv1 = GCNConv(in_channels, dim*3, aggr="mean")
-        self.conv2 = GCNConv(dim*3, dim, aggr="mean")
+        self.conv1 = GATConv(in_channels, dim*3, aggr="mean",heads=5)
+        self.conv2 = GATConv(dim*3*5, dim, aggr="mean")
         self.drop_out = drop_out
         # self.normalize = InstanceNorm(dim)
         self.graphnorm = GraphNorm(dim)
