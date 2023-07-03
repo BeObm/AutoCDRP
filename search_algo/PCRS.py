@@ -197,7 +197,6 @@ def get_best_model(topk_list, option_decoder):
         if min_rmse > val_Accuracy:
             min_rmse = val_Accuracy
             bestmodel = copy.deepcopy(dict_model)
-    # min_rmse = min_rmse
     best_acc_time = round(time.time() - start_time, 2)
     add_config("time", "best_acc_time", best_acc_time)
 
