@@ -65,7 +65,6 @@ def get_performance_distributions(e_search_space):  # get performance distributi
         performances = test_model(model, val_loader)
         performance = performances[search_metric]
         test_time = time.time() - start_time
-        # print(f"testing one epoch costs {test_time}")
         if math.isnan(performance):
             test_accc = 0
 
