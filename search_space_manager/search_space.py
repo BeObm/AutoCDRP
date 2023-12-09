@@ -29,14 +29,6 @@ def create_e_search_space(a=0,b=1):   # a<b
     nfcode=int(config["param"]["nfcode"])
     noptioncode=int(config["param"]["noptioncode"])
   
-    # attention= ["GATConv","GCNConv",'GENConv', 'GraphUNet',"HypergraphConv","GraphConv","GATConv","GCNConv","TransformerConv",
-    #           'SuperGATConv',"SAGEConv",
-    #            "ChebConv","ResGatedGraphConv","MFConv","SGConv","ARMAConv","TAGConv","GATv2Conv",
-    #           "FeaStConv","PDNConv","EGConv","ClusterGCNConv","LEConv"] 
- 
-  
-    
-    # attention= ["GraphConv","GCNConv","GATv2Conv","GATConv","GENConv","ChebConv"]
     attention= ["GCNConv","GATConv","linear","GENConv","SGConv","LEConv"]
 
     agregation=['add',"max","mean"] 
